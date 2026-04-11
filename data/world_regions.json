@@ -1,0 +1,54 @@
+﻿{
+  "regions": {
+    "frostpeak_tundra": {
+      "name": "Frostpeak Tundra",
+      "layout_type": "clusters",
+      "biome_tags": ["tundra", "freezing", "snowy", "barren"],
+      "weather_pool": ["light_snow", "blizzard", "clear_cold"],
+      "flora": ["frozen_bush", "dead_pine"],
+      "fauna": ["frost_wolf", "ice_spider"],
+      "factions": ["wildling_scout"],
+      "encounter_chance": 0.3
+    },
+    "pine_forest": {
+      "name": "The Whispering Pines",
+      "layout_type": "clusters",
+      "biome_tags": ["forest", "temperate", "wooded"],
+      "weather_pool": ["clear", "light_rain", "overcast"],
+      "flora": ["pine_tree", "berry_bush", "thicket"],
+      "fauna": ["wolf", "bear"],
+      "factions": ["bandit_thug", "wandering_merchant"],
+      "encounter_chance": 0.2
+    },
+    "imperial_highway": {
+      "name": "Imperial Highway",
+      "layout_type": "horizontal_road",
+      "biome_tags": ["road", "paved", "civilized", "patrolled"],
+      "weather_pool": ["clear", "light_rain", "overcast"],
+      "flora": ["signpost", "crate", "berry_bush"],
+      "fauna": ["stray_dog"],
+      "factions": ["imperial_guard", "merchant_caravan", "bandit_ambusher"],
+      "encounter_chance": 0.15
+    },
+    "imperial_outpost": {
+      "name": "Border Outpost",
+      "layout_type": "urban_grid",
+      "biome_tags": ["urban", "city", "fortified"],
+      "weather_pool": ["clear", "overcast"],
+      "flora": ["crate", "barrel", "signpost"],
+      "fauna": ["stray_dog", "rat"],
+      "factions": ["imperial_guard", "citizen", "shopkeeper"],
+      "encounter_chance": 0.4
+    },
+    "blackwood_swamp": {
+      "name": "The Blackwood",
+      "layout_type": "organic",
+      "biome_tags": ["swamp", "damp", "wilderness", "toxic"],
+      "weather_pool": ["heavy_rain", "dense_fog", "overcast"],
+      "flora": ["decaying_tree", "mud_puddle", "toxic_spores"],
+      "fauna": ["chaos_hound", "swamp_leech"],
+      "factions": ["cultist", "lost_traveler"],
+      "encounter_chance": 0.35
+    }
+  }
+}

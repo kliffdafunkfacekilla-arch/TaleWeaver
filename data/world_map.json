@@ -1,0 +1,10 @@
+﻿{
+  "world_name": "The Shatterlands",
+  "default_region": "pine_forest",
+  "map_chunks": {
+    "0,0": "frostpeak_tundra", "1,0": "frostpeak_tundra", "2,0": "pine_forest",
+    "0,1": "pine_forest", "1,1": "imperial_outpost", "2,1": "imperial_highway",
+    "0,2": "blackwood_swamp", "1,2": "imperial_highway", "2,2": "imperial_highway",
+    "0,3": "blackwood_swamp", "1,3": "blackwood_swamp", "2,3": "blackwood_swamp"
+  }
+}

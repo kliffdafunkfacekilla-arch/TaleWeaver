@@ -1,0 +1,15 @@
+﻿{
+  "active_quests": [
+    {
+      "quest_id": "q_01",
+      "title": "The Bandit Threat",
+      "target_region": "blackwood_swamp",
+      "injected_entities": [
+        {"template_id": "bandit_tent", "guaranteed_pos": [10, 10]},
+        {"template_id": "bandit_thug", "guaranteed_pos": [11, 10]},
+        {"template_id": "stolen_chest", "guaranteed_pos": [10, 11]}
+      ],
+      "injected_tags": ["dangerous", "bandit_territory"]
+    }
+  ]
+}

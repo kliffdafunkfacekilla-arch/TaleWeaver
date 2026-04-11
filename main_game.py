@@ -1,9 +1,10 @@
-﻿import pygame
+import pygame
 import sys
 import json
 import engine
 import narrator
 import entities
+import ui_manager
 
 pygame.init()
 
@@ -153,68 +154,6 @@ def draw_main_menu():
     pygame.display.flip()
     return buttons
 
-def draw_character_sheet(map_data):
-    player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
-    if not player: return []
-    clickable_zones = []
-    
-    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-    overlay.set_alpha(240); overlay.fill((10, 10, 15))
-    screen.blit(overlay, (0, 0))
-    
-    sheet_rect = pygame.Rect(50, 50, WINDOW_WIDTH - 100, WINDOW_HEIGHT - 100)
-    pygame.draw.rect(screen, COLORS["menu_bg"], sheet_rect)
-    pygame.draw.rect(screen, COLORS["title"], sheet_rect, 2)
-    
-    screen.blit(title_font.render(player["name"], True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 20))
-    hp_text = f"HP: {player.get('hp',0)}/{player.get('max_hp',0)}"
-    comp_text = f"Composure: {player.get('composure',0)}/{player.get('max_composure',0)}"
-    screen.blit(font.render(f"{hp_text}  |  {comp_text}", True, COLORS["hostile"]), (sheet_rect.x + 20, sheet_rect.y + 60))
-    
-    res = player.get("resources", {})
-    stam_text = f"Stamina: {res.get('stamina',0)}/{entities.get_max_stamina(player)}"
-    foc_text = f"Focus: {res.get('focus',0)}/{entities.get_max_focus(player)}"
-    screen.blit(font.render(f"{stam_text}  |  {foc_text}", True, COLORS["player"]), (sheet_rect.x + 20, sheet_rect.y + 80))
-    pygame.draw.line(screen, COLORS["menu_border"], (sheet_rect.x + 20, sheet_rect.y + 110), (sheet_rect.right - 20, sheet_rect.y + 110))
-    
-    stats = player.get("stats", {})
-    screen.blit(font.render("--- THE BODY ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 130))
-    for i, s in enumerate(["Might", "Endurance", "Reflexes", "Finesse", "Vitality", "Fortitude"]):
-        screen.blit(font.render(f"{s}: {stats.get(s, 0)}", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 160 + (i * 25)))
-
-    screen.blit(font.render("--- THE MIND ---", True, COLORS["title"]), (sheet_rect.x + 250, sheet_rect.y + 130))
-    for i, s in enumerate(["Knowledge", "Logic", "Awareness", "Intuition", "Charm", "Willpower"]):
-        screen.blit(font.render(f"{s}: {stats.get(s, 0)}", True, COLORS["text"]), (sheet_rect.x + 250, sheet_rect.y + 160 + (i * 25)))
-
-    screen.blit(font.render("--- DERIVED ADVANTAGE ---", True, COLORS["title"]), (sheet_rect.x + 480, sheet_rect.y + 130))
-    derived = entities.get_derived_stats(player)
-    for i, (k, v) in enumerate(derived.items()):
-        screen.blit(font.render(f"{k}: {v}", True, COLORS["npc"]), (sheet_rect.x + 480, sheet_rect.y + 160 + (i * 25)))
-
-    pygame.draw.line(screen, COLORS["menu_border"], (sheet_rect.x + 20, sheet_rect.y + 330), (sheet_rect.right - 20, sheet_rect.y + 330))
-
-    screen.blit(font.render("--- LOADOUT (Click to Remove) ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 350))
-    equip = player.get("equipment", {})
-    y_off = 380
-    for slot in ["weapon", "armor", "accessory"]:
-        item = equip.get(slot, 'None')
-        text_surf = font.render(f"{slot.capitalize()}: {item}", True, COLORS["hostile"] if item != "None" else COLORS["text"])
-        rect = screen.blit(text_surf, (sheet_rect.x + 20, sheet_rect.y + y_off))
-        if item != "None": clickable_zones.append({"rect": rect, "action": "unequip", "slot": slot})
-        y_off += 25
-
-    screen.blit(font.render("--- INVENTORY (Click to Equip) ---", True, COLORS["title"]), (sheet_rect.x + 350, sheet_rect.y + 350))
-    inv = player.get("inventory", [])
-    if not inv: screen.blit(font.render("Empty", True, COLORS["text"]), (sheet_rect.x + 350, sheet_rect.y + 380))
-    for i, item in enumerate(inv):
-        text_surf = font.render(f"- {item}", True, COLORS["player"])
-        rect = screen.blit(text_surf, (sheet_rect.x + 350, sheet_rect.y + 380 + (i * 25)))
-        clickable_zones.append({"rect": rect, "action": "equip", "item": item})
-
-    screen.blit(font.render("Press 'C' or 'ESC' to close", True, (150, 150, 150)), (sheet_rect.centerx - 100, sheet_rect.bottom - 30))
-    pygame.display.flip()
-    return clickable_zones
-
 def draw_tactical_screen(map_data, cam_x, cam_y):
     screen.fill(COLORS["bg"])
     draw_grid()
@@ -293,18 +232,56 @@ def main():
 
         elif app_state == "CHARACTER_SHEET":
             draw_tactical_screen(map_data, cam_x, cam_y)
-            clickable_zones = draw_character_sheet(map_data)
+            clickable_zones = ui_manager.draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH, WINDOW_HEIGHT)
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 elif event.type == pygame.KEYDOWN and event.key in [pygame.K_c, pygame.K_ESCAPE]:
+                    ui_manager.UI_STATE["context_menu"]["active"] = False
                     app_state = "PLAYING"
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    for zone in clickable_zones:
-                        if zone["rect"].collidepoint(event.pos):
-                            if zone["action"] == "unequip": engine.execute_unequip("char_01", zone["slot"])
-                            elif zone["action"] == "equip": engine.execute_equip("char_01", zone["item"])
-                            map_data = load_map_data() 
-                            break
+                
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    clicked_zone = False
+                    
+                    if event.button == 1: # LEFT CLICK
+                        for zone in clickable_zones:
+                            if zone["rect"].collidepoint(event.pos):
+                                clicked_zone = True
+                                
+                                if zone["action"] == "switch_tab":
+                                    ui_manager.UI_STATE["active_tab"] = zone["target"]
+                                    ui_manager.UI_STATE["context_menu"]["active"] = False
+                                    
+                                elif zone["action"] == "unequip":
+                                    engine.execute_unequip("char_01", zone["slot"])
+                                    map_data = load_map_data()
+                                    
+                                elif zone["action"] == "context_action":
+                                    if zone["choice"] == "Equip": engine.execute_equip("char_01", zone["item"])
+                                    elif zone["choice"] == "Drop": engine.execute_drop("char_01", zone["item"])
+                                    elif zone["choice"] == "Use": engine.execute_use("char_01", zone["item"])
+                                    ui_manager.UI_STATE["context_menu"]["active"] = False
+                                    map_data = load_map_data()
+                                break
+                        
+                        if not clicked_zone: ui_manager.UI_STATE["context_menu"]["active"] = False
+                            
+                    elif event.button == 3: # RIGHT CLICK
+                        for zone in clickable_zones:
+                            if zone["rect"].collidepoint(event.pos) and zone["action"] == "inventory_item":
+                                item = zone["item"]
+                                options = []
+                                items_db = entities.load_items()
+                                if item in items_db.get("weapons", {}) or item in items_db.get("armor", {}) or item in items_db.get("accessories", {}):
+                                    options.append("Equip")
+                                else:
+                                    options.append("Use")
+                                options.append("Drop")
+                                
+                                ui_manager.UI_STATE["context_menu"] = {
+                                    "active": True, "x": event.pos[0], "y": event.pos[1],
+                                    "item": item, "options": options
+                                }
 
         elif app_state == "PLAYING":
             cam_x, cam_y = get_camera_offset(map_data)

@@ -1,9 +1,9 @@
-﻿import json
+import json
 import random
 import os
-import shutil
 import map_generator
 import entities
+import db_manager  # NEW: Import our database manager
 
 def load_state():
     if not os.path.exists("local_map_state.json"): return start_new_game()
@@ -16,14 +16,15 @@ def load_state():
         return start_new_game()
 
 def save_state(state):
+    # 1. Update the local file for the UI to read
     with open("local_map_state.json", "w") as f: json.dump(state, f, indent=2)
+    
+    # 2. Update the SQLite Database with the persistent memory!
     g_pos = state.get("meta", {}).get("global_pos", [0,0])
-    os.makedirs("saves", exist_ok=True)
-    with open(f"saves/chunk_{g_pos[0]}_{g_pos[1]}.json", "w") as f: json.dump(state, f, indent=2)
+    db_manager.save_chunk(g_pos[0], g_pos[1], state)
 
 def start_new_game():
-    if os.path.exists("saves"): shutil.rmtree("saves") 
-    os.makedirs("saves", exist_ok=True)
+    db_manager.reset_world() # Wipe the DB clean
     map_generator.generate_local_map([0,0], [25,25])
     with open("local_map_state.json", "r") as f: state = json.load(f)
     state.setdefault("meta", {})["clock"] = 0 
@@ -135,8 +136,9 @@ def execute_transition(dest_x, dest_y):
     old_g_x, old_g_y = global_pos[0], global_pos[1]
     
     if player_data: state["entities"].remove(player_data)
-    os.makedirs("saves", exist_ok=True)
-    with open(f"saves/chunk_{old_g_x}_{old_g_y}.json", "w") as f: json.dump(state, f, indent=2)
+    
+    # 1. Save the old chunk to the DB
+    db_manager.save_chunk(old_g_x, old_g_y, state)
 
     new_g_x, new_g_y = old_g_x, old_g_y
     entry_x, entry_y = dest_x, dest_y
@@ -145,10 +147,10 @@ def execute_transition(dest_x, dest_y):
     if dest_y >= grid_h - 1: new_g_y += 1; entry_y = 1
     elif dest_y <= 0: new_g_y -= 1; entry_y = grid_h - 2
 
-    new_chunk_path = f"saves/chunk_{new_g_x}_{new_g_y}.json"
+    # 2. Check the DB for the new chunk
+    new_state = db_manager.load_chunk(new_g_x, new_g_y)
     
-    if os.path.exists(new_chunk_path):
-        with open(new_chunk_path, "r") as f: new_state = json.load(f)
+    if new_state:
         if player_data:
             player_data["pos"] = [entry_x, entry_y]
             new_state["entities"].append(player_data)
@@ -201,11 +203,55 @@ def execute_loot(actor_id, target_id):
 
 def execute_equip(actor_id, item_name):
     state = load_state()
-    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id), None)
-    if actor and entities.equip_item(actor, item_name): save_state(state)
+    # Safely find the player, no matter what their ID is
+    actor = next((e for e in state.get("entities", []) if e.get("type") == "player" or e.get("id") == actor_id), None)
+    
+    if actor:
+        if entities.equip_item(actor, item_name):
+            print(f"[System] Successfully equipped {item_name}.")
+            save_state(state)
+        else:
+            print(f"[Error] Failed to equip {item_name}. Check if it exists in data/items.json!")
 
 def execute_unequip(actor_id, slot):
     state = load_state()
-    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id), None)
-    if actor and entities.unequip_item(actor, slot): save_state(state)
+    actor = next((e for e in state.get("entities", []) if e.get("type") == "player" or e.get("id") == actor_id), None)
+    
+    if actor:
+        if entities.unequip_item(actor, slot):
+            print(f"[System] Successfully unequipped {slot}.")
+            save_state(state)
 
+def execute_drop(actor_id, item_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("type") == "player" or e.get("id") == actor_id), None)
+    
+    if actor and item_name in actor.get("inventory", []):
+        actor["inventory"].remove(item_name)
+        # Create a physical entity on the map where Jax is standing!
+        dropped_item = {
+            "name": f"Dropped {item_name}",
+            "type": "prop",
+            "pos": list(actor["pos"]),
+            "tags": ["item", "container"],
+            "inventory": [item_name],
+            "hp": 1
+        }
+        state["entities"].append(dropped_item)
+        print(f"[System] You dropped {item_name} on the ground.")
+        save_state(state)
+
+def execute_use(actor_id, item_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("type") == "player" or e.get("id") == actor_id), None)
+    
+    if actor and item_name in actor.get("inventory", []):
+        if item_name == "Bandage":
+            actor["hp"] = min(actor.get("max_hp", 20), actor.get("hp", 0) + 10)
+            actor["inventory"].remove(item_name)
+            print("[System] Used Bandage. Recovered 10 HP.")
+        elif item_name == "Venom Gland":
+            print("[System] You examine the Venom Gland... you probably shouldn't eat this.")
+        else:
+            print(f"[System] You examine the {item_name}.")
+        save_state(state)

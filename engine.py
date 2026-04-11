@@ -4,6 +4,7 @@ import os
 import map_generator
 import entities
 import db_manager  # NEW: Import our database manager
+import actions
 
 def load_state():
     if not os.path.exists("local_map_state.json"): return start_new_game()
@@ -255,3 +256,54 @@ def execute_use(actor_id, item_name):
         else:
             print(f"[System] You examine the {item_name}.")
         save_state(state)
+
+def execute_stat_action(actor_id, target_id, action_str):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("type") == "player" or e.get("id") == actor_id), None)
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    
+    if not actor or not target: return "Error"
+    
+    # Check defined cost in ACTION_REGISTRY
+    action_data = actions.ACTION_REGISTRY.get(action_name)
+    if action_data:
+        cost_type = action_data["cost"]["type"]
+        cost_val = action_data["cost"]["val"]
+    else:
+        is_mental = stat_used in ["Knowledge", "Logic", "Awareness", "Intuition", "Charm", "Willpower"]
+        cost_type = "focus" if is_mental else "stamina"
+        cost_val = 1
+    
+    if actor["resources"].get(cost_type, 0) < cost_val:
+        print(f"\n[System] Not enough {cost_type} to perform {action_name}.")
+        return "Not enough resources."
+    
+    actor["resources"][cost_type] -= cost_val
+    
+    # Roll the dice: 1d20 + Base Stat + Gear Bonus
+    actor_stat_val = entities.get_stat(actor, stat_used)
+    roll = random.randint(1, 20) + actor_stat_val
+    
+    # Calculate a simple DC (Difficulty Class)
+    target_resist = 10
+    if "stats" in target:
+        target_resist += max(target["stats"].values()) if target["stats"] else 0
+    elif target.get("type") == "prop":
+        target_resist = 12 # Base difficulty for inanimate objects
+        
+    success = roll >= target_resist
+    
+    mech_result = f"Attempted {action_name} using {stat_used}. Rolled {roll} vs DC {target_resist}. "
+    mech_result += "SUCCESS!" if success else "FAILED."
+    
+    print(f"\n[System] {mech_result}")
+    
+    # Log it and tell the AI Director what happened
+    state["latest_action"] = {"actor": actor["name"], "action": action_str, "target": target["name"], "mechanical_result": mech_result}
+    
+    narrator_prompt = f"NARRATOR MODE: The player attempted to '{action_name}' on {target['name']} using their {stat_used} stat. The mechanical outcome was a {'SUCCESS' if success else 'FAILURE'}. Describe this in 2 vivid sentences fitting a gritty fantasy world. NO AI meta-text."
+    state["ai_directive"] = narrator_prompt
+    
+    execute_world_turn(state)
+    save_state(state)
+    return mech_result

@@ -15,11 +15,11 @@
       "freezing",
       "snowy",
       "barren",
-      "light_snow"
+      "clear_cold"
     ],
-    "clock": 0
+    "clock": 1
   },
-  "environment": "You are in Frostpeak Tundra. The weather is light_snow.",
+  "environment": "You are in Frostpeak Tundra. The weather is clear_cold.",
   "entities": [
     {
       "id": "char_01",
@@ -29,7 +29,7 @@
         25,
         25
       ],
-      "hp": 15,
+      "hp": 20,
       "max_hp": 20,
       "composure": 15,
       "max_composure": 15,
@@ -40,7 +40,7 @@
         "max_focus": 10
       },
       "stats": {
-        "Might": 4,
+        "Might": 15,
         "Endurance": 5,
         "Reflexes": 3,
         "Finesse": 2,
@@ -58,7 +58,11 @@
         "armor": "Leather River-Coat",
         "accessory": "Aether-Compass"
       },
-      "inventory": [],
+      "inventory": [
+        "Torch",
+        "Bandage",
+        "Bottle of Fir-Gin"
+      ],
       "tags": [
         "player",
         "flesh",
@@ -77,316 +81,48 @@
         "cold",
         "solid"
       ],
-      "id": "ent_4811",
+      "id": "ent_9245",
       "pos": [
-        34,
-        21
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_1676",
-      "pos": [
-        35,
-        20
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_8340",
-      "pos": [
-        36,
-        20
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_3451",
-      "pos": [
-        33,
-        20
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_9933",
-      "pos": [
-        38,
-        24
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_6387",
-      "pos": [
-        33,
-        25
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_3925",
-      "pos": [
-        8,
-        19
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_4249",
-      "pos": [
-        10,
-        15
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_1120",
-      "pos": [
-        6,
-        16
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_7459",
-      "pos": [
-        9,
-        20
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_5521",
-      "pos": [
-        33,
-        33
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_9913",
-      "pos": [
-        35,
-        35
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_9584",
-      "pos": [
-        35,
-        35
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_3534",
-      "pos": [
-        34,
-        39
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_4723",
-      "pos": [
-        32,
+        39,
         34
       ]
     },
     {
-      "name": "Wildling Scout",
+      "name": "Ice Spider",
       "type": "hostile",
-      "hp": 15,
+      "hp": 10,
       "tags": [
-        "human",
+        "beast",
         "hostile",
-        "flesh"
-      ],
-      "id": "ent_1749",
-      "pos": [
-        32,
-        38
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_6279",
-      "pos": [
-        7,
-        11
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_7122",
-      "pos": [
-        8,
-        12
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
         "cold",
-        "solid"
+        "venomous"
       ],
-      "id": "ent_7554",
+      "inventory": [
+        "Venom Gland"
+      ],
+      "id": "ent_7371",
       "pos": [
-        8,
-        11
+        43,
+        32
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_2998",
+      "pos": [
+        39,
+        31
       ]
     },
     {
@@ -398,10 +134,10 @@
         "cold",
         "solid"
       ],
-      "id": "ent_5464",
+      "id": "ent_2476",
       "pos": [
-        8,
-        8
+        42,
+        32
       ]
     },
     {
@@ -413,10 +149,10 @@
         "hostile",
         "flesh"
       ],
-      "id": "ent_6559",
+      "id": "ent_4573",
       "pos": [
-        5,
-        7
+        42,
+        30
       ]
     },
     {
@@ -428,10 +164,63 @@
         "cold",
         "solid"
       ],
-      "id": "ent_6898",
+      "id": "ent_2030",
       "pos": [
-        7,
-        7
+        43,
+        31
+      ]
+    },
+    {
+      "name": "Dead Pine Tree",
+      "type": "prop",
+      "hp": 15,
+      "tags": [
+        "wood",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_2359",
+      "pos": [
+        38,
+        14
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_1390",
+      "pos": [
+        34,
+        11
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_3280",
+      "pos": [
+        38,
+        12
       ]
     },
     {
@@ -447,10 +236,10 @@
       "inventory": [
         "Venom Gland"
       ],
-      "id": "ent_2857",
+      "id": "ent_1985",
       "pos": [
-        4,
-        11
+        36,
+        10
       ]
     },
     {
@@ -462,9 +251,239 @@
         "cold",
         "solid"
       ],
-      "id": "ent_6049",
+      "id": "ent_5134",
       "pos": [
-        2,
+        36,
+        15
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_9953",
+      "pos": [
+        36,
+        15
+      ]
+    },
+    {
+      "name": "Frozen Bush",
+      "type": "prop",
+      "hp": 5,
+      "tags": [
+        "plant",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_4272",
+      "pos": [
+        35,
+        13
+      ]
+    },
+    {
+      "name": "Wildling Scout",
+      "type": "hostile",
+      "hp": 15,
+      "tags": [
+        "human",
+        "hostile",
+        "flesh"
+      ],
+      "id": "ent_9029",
+      "pos": [
+        38,
+        27
+      ]
+    },
+    {
+      "name": "Dead Pine Tree",
+      "type": "prop",
+      "hp": 15,
+      "tags": [
+        "wood",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_4101",
+      "pos": [
+        38,
+        28
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_5795",
+      "pos": [
+        39,
+        29
+      ]
+    },
+    {
+      "name": "Frozen Bush",
+      "type": "prop",
+      "hp": 5,
+      "tags": [
+        "plant",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_7493",
+      "pos": [
+        40,
+        28
+      ]
+    },
+    {
+      "name": "Frozen Bush",
+      "type": "prop",
+      "hp": 5,
+      "tags": [
+        "plant",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_7428",
+      "pos": [
+        41,
+        31
+      ]
+    },
+    {
+      "name": "Frozen Bush",
+      "type": "prop",
+      "hp": 5,
+      "tags": [
+        "plant",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_8887",
+      "pos": [
+        27,
+        31
+      ]
+    },
+    {
+      "name": "Frozen Bush",
+      "type": "prop",
+      "hp": 5,
+      "tags": [
+        "plant",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_6901",
+      "pos": [
+        32,
+        29
+      ]
+    },
+    {
+      "name": "Dead Pine Tree",
+      "type": "prop",
+      "hp": 15,
+      "tags": [
+        "wood",
+        "cold",
+        "solid"
+      ],
+      "id": "ent_7335",
+      "pos": [
+        29,
+        29
+      ]
+    },
+    {
+      "name": "Ice Spider",
+      "type": "hostile",
+      "hp": 10,
+      "tags": [
+        "beast",
+        "hostile",
+        "cold",
+        "venomous"
+      ],
+      "inventory": [
+        "Venom Gland"
+      ],
+      "id": "ent_6897",
+      "pos": [
+        11,
+        8
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_1209",
+      "pos": [
+        12,
+        8
+      ]
+    },
+    {
+      "name": "Frost Wolf",
+      "type": "hostile",
+      "hp": 18,
+      "tags": [
+        "beast",
+        "hostile",
+        "flesh",
+        "cold"
+      ],
+      "inventory": [
+        "Frost-Wolf Pelt"
+      ],
+      "id": "ent_4186",
+      "pos": [
+        10,
+        5
+      ]
+    },
+    {
+      "name": "Wildling Scout",
+      "type": "hostile",
+      "hp": 15,
+      "tags": [
+        "human",
+        "hostile",
+        "flesh"
+      ],
+      "id": "ent_5128",
+      "pos": [
+        12,
         6
       ]
     },
@@ -481,10 +500,10 @@
       "inventory": [
         "Venom Gland"
       ],
-      "id": "ent_1728",
+      "id": "ent_9275",
       "pos": [
-        32,
-        37
+        15,
+        6
       ]
     },
     {
@@ -496,78 +515,10 @@
         "cold",
         "solid"
       ],
-      "id": "ent_2111",
+      "id": "ent_2725",
       "pos": [
-        35,
-        42
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2943",
-      "pos": [
-        33,
-        38
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_3198",
-      "pos": [
-        36,
-        36
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_4837",
-      "pos": [
-        38,
-        48
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_6270",
-      "pos": [
-        41,
-        46
+        13,
+        5
       ]
     },
     {
@@ -579,44 +530,25 @@
         "hostile",
         "flesh"
       ],
-      "id": "ent_2062",
+      "id": "ent_8327",
       "pos": [
-        40,
-        43
+        15,
+        2
       ]
     },
     {
-      "name": "Ice Spider",
+      "name": "Wildling Scout",
       "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_6287",
-      "pos": [
-        38,
-        43
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
       "hp": 15,
       "tags": [
-        "wood",
-        "cold",
-        "solid"
+        "human",
+        "hostile",
+        "flesh"
       ],
-      "id": "ent_5086",
+      "id": "ent_5755",
       "pos": [
-        38,
-        47
+        13,
+        2
       ]
     },
     {
@@ -628,81 +560,43 @@
         "cold",
         "solid"
       ],
-      "id": "ent_3929",
+      "id": "ent_6555",
       "pos": [
-        35,
-        48
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_7728",
-      "pos": [
-        39,
-        47
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_2130",
-      "pos": [
-        32,
-        42
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_1553",
-      "pos": [
-        37,
-        43
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_9611",
-      "pos": [
-        34,
+        28,
         41
       ]
     },
     {
+      "name": "Wildling Scout",
+      "type": "hostile",
+      "hp": 15,
+      "tags": [
+        "human",
+        "hostile",
+        "flesh"
+      ],
+      "id": "ent_6746",
+      "pos": [
+        25,
+        38
+      ]
+    },
+    {
+      "name": "Wildling Scout",
+      "type": "hostile",
+      "hp": 15,
+      "tags": [
+        "human",
+        "hostile",
+        "flesh"
+      ],
+      "id": "ent_9959",
+      "pos": [
+        29,
+        39
+      ]
+    },
+    {
       "name": "Dead Pine Tree",
       "type": "prop",
       "hp": 15,
@@ -711,10 +605,10 @@
         "cold",
         "solid"
       ],
-      "id": "ent_1400",
+      "id": "ent_9061",
       "pos": [
-        37,
-        44
+        28,
+        38
       ]
     },
     {
@@ -730,29 +624,31 @@
       "inventory": [
         "Frost-Wolf Pelt"
       ],
-      "id": "ent_5530",
+      "id": "ent_4153",
       "pos": [
-        32,
-        46
+        24,
+        35
       ]
     },
     {
-      "name": "Dropped Bandage",
+      "id": "target_prop",
+      "name": "Heavy Door",
       "type": "prop",
       "pos": [
-        25,
+        26,
         25
       ],
       "tags": [
-        "item",
-        "container"
-      ],
-      "inventory": [
-        "Bandage"
-      ],
-      "hp": 1
+        "solid",
+        "door"
+      ]
     }
   ],
-  "latest_action": {},
-  "ai_directive": ""
+  "latest_action": {
+    "actor": "Captain Jax",
+    "action": "[Might] Bash",
+    "target": "Heavy Door",
+    "mechanical_result": "Attempted Bash using Might. Rolled 22 vs DC 12. SUCCESS!"
+  },
+  "ai_directive": "NARRATOR MODE: The player attempted to 'Bash' on Heavy Door using their Might stat. The mechanical outcome was a SUCCESS. Describe this in 2 vivid sentences fitting a gritty fantasy world. NO AI meta-text."
 }

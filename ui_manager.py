@@ -144,3 +144,50 @@ def _draw_inventory_tab(screen, player, sheet_rect, font, COLORS, clickable_zone
             clickable_zones.append({"rect": rect, "action": "inventory_item", "item": item})
             y_off += 25
         x_off += 250 # Space out columns
+
+def draw_hover_tooltip(screen, entity, mouse_pos, font, COLORS):
+    """Draws a dynamic tooltip for entities on the tactical map."""
+    if not entity: return
+
+    # Build the text lines
+    lines = [entity.get("name", "Unknown Entity")]
+    
+    # Add HP if the entity is biological/destructible
+    if "hp" in entity:
+        lines.append(f"HP: {entity['hp']}/{entity.get('max_hp', entity['hp'])}")
+        
+    # Add up to 3 Tags for flavor (e.g., [beast, hostile, cold])
+    tags = entity.get("tags", [])
+    if tags:
+        tag_str = ", ".join(tags[:3])
+        lines.append(f"[{tag_str}]")
+
+    # Calculate Box Dimensions dynamically
+    padding = 10
+    line_height = 20
+    box_width = max([font.size(line)[0] for line in lines]) + (padding * 2)
+    box_height = (len(lines) * line_height) + padding
+
+    # Offset from the cursor so it doesn't cover the mouse
+    x, y = mouse_pos
+    x += 15
+    y += 15
+
+    # Screen Boundary Check (prevents the tooltip from clipping off-screen)
+    screen_w, screen_h = screen.get_size()
+    if x + box_width > screen_w: x = mouse_pos[0] - box_width - 10
+    if y + box_height > screen_h: y = mouse_pos[1] - box_height - 10
+
+    # Draw the Background Plate
+    tooltip_surf = pygame.Surface((box_width, box_height))
+    tooltip_surf.set_alpha(230) # Slight transparency
+    tooltip_surf.fill(COLORS["menu_bg"])
+    screen.blit(tooltip_surf, (x, y))
+    pygame.draw.rect(screen, COLORS["menu_border"], (x, y, box_width, box_height), 1)
+
+    # Render the Text
+    for i, line in enumerate(lines):
+        color = COLORS["title"] if i == 0 else COLORS["text"]
+        if "hp" in entity and i == 1:
+            color = COLORS["hostile"] if "hostile" in tags else COLORS["player"]
+        screen.blit(font.render(line, True, color), (x + padding, y + 5 + (i * line_height)))

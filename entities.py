@@ -1,5 +1,6 @@
-﻿import random
+import random
 import json
+import actions
 
 def load_items():
     try:
@@ -63,6 +64,23 @@ def get_derived_stats(entity):
         "Movement": get_stat(entity, "Reflexes") + get_stat(entity, "Might") + get_stat(entity, "Intuition"),
         "Balance": get_stat(entity, "Endurance") + get_stat(entity, "Fortitude") + get_stat(entity, "Willpower")
     }
+
+def get_best_stat_for_action(player, action_name):
+    """Determines which stat the player is best at for a specific action."""
+    data = actions.ACTION_REGISTRY.get(action_name)
+    if not data or not data.get("stats"): return None
+    
+    stats = player.get("stats", {})
+    best_stat = data["stats"][0]
+    best_val = -1
+    
+    for stat in data["stats"]:
+        val = get_stat(player, stat)
+        if val > best_val:
+            best_val = val
+            best_stat = stat
+            
+    return best_stat
 
 def get_max_stamina(entity):
     base_max = entity.get("resources", {}).get("max_stamina", 10)

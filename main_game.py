@@ -5,6 +5,7 @@ import engine
 import narrator
 import entities
 import ui_manager
+import actions
 
 pygame.init()
 
@@ -37,7 +38,11 @@ app_state = "MAIN_MENU"
 status_text = "System Online. Immersive Sim Engine active."
 transition_target = None
 
-context_menu = {"active": False, "x": 0, "y": 0, "target_name": None, "target_id": None, "target_pos": None, "options": []}
+context_menu = {
+    "active": False, "x": 0, "y": 0, 
+    "target_name": None, "target_id": None, "target_pos": None, 
+    "options": [], "page": "main"
+}
 
 def load_map_data():
     try:
@@ -125,16 +130,60 @@ def draw_context_menu():
         if opt_rect.collidepoint(mouse_x, mouse_y): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
         screen.blit(font.render(option, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
 
-def generate_menu_options(entity):
+def generate_menu_options(entity, player, page="main"):
     if not entity: return ["Move Here", "Examine Area", "Cancel"]
-    tags, options = entity.get("tags", []), []
-    if "player" in tags: options.extend(["Examine Self"])
-    if "hostile" in tags: options.extend(["Attack", "Examine"])
-    if "dead" in tags: options.extend(["Examine", "Loot"])
-    if "prop" in entity.get("type", "") or "wall" in tags: options.extend(["Examine"])
-    if "container" in tags: options.insert(0, "Open")
+    
+    tags = entity.get("tags", [])
+    ent_type = entity.get("type", "prop")
+    
+    # Get all valid actions from registry
+    valid_actions = actions.get_valid_actions(player, entity)
+    options = []
+
+    if page == "main":
+        if "player" in tags: options.append("Examine Self")
+        
+        # 1. Essential context actions
+        if "container" in tags: options.append("Open")
+        if "dead" in tags: options.append("Loot")
+        if ent_type == "hostile" and "dead" not in tags: options.append("Attack")
+        
+        # 2. Most logical stat actions (Top 2 unique logical ones)
+        # We find actions that the player is actually "good" at
+        stat_actions = []
+        for act in valid_actions:
+            best_stat = entities.get_best_stat_for_action(player, act)
+            if best_stat: # Only include actions that actually use stats
+                stat_val = entities.get_stat(player, best_stat)
+                stat_actions.append((act, best_stat, stat_val))
+        
+        # Sort by player's stat value
+        stat_actions.sort(key=lambda x: x[2], reverse=True)
+        
+        # Take top 2
+        for i in range(min(2, len(stat_actions))):
+            act, stat, val = stat_actions[i]
+            options.append(f"[{stat}] {act}")
+            
+        options.append("Examine")
+        if len(valid_actions) > 3: # Loot, Open, Examine already take space
+            options.append("More Actions...")
+            
+    elif page == "more":
+        # Show all valid actions from the registry
+        for act in valid_actions:
+            best_stat = entities.get_best_stat_for_action(player, act)
+            if best_stat:
+                options.append(f"[{best_stat}] {act}")
+            else:
+                options.append(act) # Generic actions like Loot
+        options.append("Back")
+
     options.append("Cancel")
-    return options
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    return [x for x in options if not (x in seen or seen.add(x))]
 
 def draw_main_menu():
     screen.fill(COLORS["bg"])
@@ -285,6 +334,7 @@ def main():
 
         elif app_state == "PLAYING":
             cam_x, cam_y = get_camera_offset(map_data)
+            player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
@@ -292,7 +342,6 @@ def main():
                     if event.key == pygame.K_ESCAPE: app_state = "MAIN_MENU"
                     elif event.key == pygame.K_c: app_state = "CHARACTER_SHEET"
                     else:
-                        player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
                         if player:
                             if "dead" in player.get("tags", []):
                                 status_text = "System: YOU ARE DEAD. Game Over. (Press ESC)"
@@ -317,7 +366,6 @@ def main():
                     if not clicked_entity: clicked_entity = next((e for e in ents_at_pos if e.get("type") == "prop"), None)
                     if not clicked_entity: clicked_entity = ents_at_pos[0] if ents_at_pos else None
                     
-                    player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
                     if player and "dead" in player.get("tags", []):
                         status_text = "System: YOU ARE DEAD. Game Over. (Press ESC)"
                         context_menu["active"] = False
@@ -334,6 +382,20 @@ def main():
                                     if index < len(context_menu["options"]):
                                         selection = context_menu["options"][index]
                                         
+                                        if selection == "More Actions...":
+                                            context_menu["page"] = "more"
+                                            # We need to find the target entity again or store it in context_menu
+                                            # For now, let's look it up by ID/Pos
+                                            target = next((e for e in map_data.get("entities", []) if e.get("id") == context_menu["target_id"]), None)
+                                            context_menu["options"] = generate_menu_options(target, player, page="more")
+                                            continue # Keep menu open
+                                            
+                                        elif selection == "Back":
+                                            context_menu["page"] = "main"
+                                            target = next((e for e in map_data.get("entities", []) if e.get("id") == context_menu["target_id"]), None)
+                                            context_menu["options"] = generate_menu_options(target, player, page="main")
+                                            continue # Keep menu open
+
                                         if selection != "Cancel":
                                             status_text = f"System: Executing {selection}..."
                                             draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
@@ -353,8 +415,11 @@ def main():
                                                 engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif selection == "Examine Self": 
                                                 engine.execute_examine("char_01", "char_01")
+                                            # NEW STAT ACTION ROUTER
+                                            elif selection.startswith("[") and "]" in selection:
+                                                engine.execute_stat_action("char_01", context_menu["target_id"], selection)
                                             
-                                            if selection not in ["Move Here", "Cancel", "Loot", "Open"]:
+                                            if selection not in ["Move Here", "Cancel", "Loot", "Open"] and not selection.startswith("["):
                                                 status_text = f"Director: {narrator.generate_flavor_text()}"
                             
                             context_menu["active"] = False
@@ -374,14 +439,37 @@ def main():
                             context_menu["active"] = True
                             context_menu["x"] = mouse_x
                             context_menu["y"] = mouse_y
+                            context_menu["page"] = "main"
                             context_menu["target_pos"] = [grid_x, grid_y]
                             context_menu["target_name"] = clicked_entity["name"] if clicked_entity else None
                             context_menu["target_id"] = clicked_entity.get("id", clicked_entity["name"]) if clicked_entity else None
-                            context_menu["options"] = generate_menu_options(clicked_entity)
+                            # FIX: Pass the player entity to the menu generator
+                            context_menu["options"] = generate_menu_options(clicked_entity, player, page="main")
 
+            # --- End of PLAYING event loop ---
             map_data = load_map_data()
             cam_x, cam_y = get_camera_offset(map_data)
             draw_tactical_screen(map_data, cam_x, cam_y)
+            
+            # --- NEW: AT-A-GLANCE HOVER TOOLTIPS ---
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            # Only draw tooltips if we are on the map (not the UI) and no menus are open
+            if not context_menu["active"] and mouse_y < WINDOW_HEIGHT - UI_HEIGHT:
+                hover_grid_x = (mouse_x // CELL_SIZE) + cam_x
+                hover_grid_y = (mouse_y // CELL_SIZE) + cam_y
+                
+                # Use our Z-Index logic to prioritize bodies over the floor
+                ents_at_pos = [e for e in map_data.get("entities", []) if e["pos"] == [hover_grid_x, hover_grid_y]]
+                hovered_ent = None
+                for p_type in ["player", "hostile", "npc"]:
+                    if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if e.get("type") == p_type), None)
+                if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if "dead" in e.get("tags", [])), None)
+                if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if e.get("type") == "prop"), None)
+                
+                if hovered_ent:
+                    ui_manager.draw_hover_tooltip(screen, hovered_ent, (mouse_x, mouse_y), font, COLORS)
+            # ----------------------------------------
+
             pygame.display.flip()
             
         elif app_state == "TRANSITION_PROMPT":

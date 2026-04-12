@@ -325,14 +325,22 @@ def execute_move(actor_id, dest_x, dest_y):
     state = load_state()
     actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
     if not actor or "dead" in actor.get("tags", []): return "Action failed."
+    
+    is_combat = state.get("meta", {}).get("in_combat", False)
+    
     dx, dy = abs(actor["pos"][0] - dest_x), abs(actor["pos"][1] - dest_y)
     max_dist = 1
     if max(dx, dy) > max_dist: return f"Move too far!"
     
-    if not entities.consume_beat(actor, "move"): return "No Move Beats!"
-    if not entities.spend_stamina(actor, 1): return "Exhausted!"
+    # PULSE RESTRICTION only applies in combat
+    if is_combat:
+        if not entities.consume_beat(actor, "move"): return "No Move Beats!"
+        if not entities.spend_stamina(actor, 1): return "Exhausted!"
     
-    actor["pos"] = [dest_x, dest_y]; state["latest_action"] = {"actor": actor["name"], "action": "Movement", "target": f"[{dest_x}, {dest_y}]", "mechanical_result": "Moved."}; save_state(state); return "Moved."
+    actor["pos"] = [dest_x, dest_y]
+    state["latest_action"] = {"actor": actor["name"], "action": "Movement", "target": f"[{dest_x}, {dest_y}]", "mechanical_result": "Moved."}
+    save_state(state)
+    return "Moved."
 
 def execute_transition(dest_x, dest_y):
     state = load_state()

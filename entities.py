@@ -139,6 +139,11 @@ def get_derived_stats(entity):
         "Balance": get_stat(entity, "Endurance") + get_stat(entity, "Fortitude") + get_stat(entity, "Willpower")
     }
 
+def get_movement_speed(entity):
+    """Returns the movement distance allowed by a single Move Beat."""
+    stats = get_derived_stats(entity)
+    return max(1, stats.get("Movement", 1))
+
 def get_best_stat_for_action(player, action_name):
     """Determines which stat the player is best at for a specific action."""
     data = actions.ACTION_REGISTRY.get(action_name)

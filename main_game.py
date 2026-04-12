@@ -6,6 +6,7 @@ import narrator
 import entities
 import ui_manager
 import actions
+import threading
 
 pygame.init()
 
@@ -72,23 +73,19 @@ def draw_entities(map_data, cam_x, cam_y):
             pixel_x, pixel_y = grid_x * CELL_SIZE, grid_y * CELL_SIZE
             tags = entity.get("tags", [])
             ent_type = entity.get("type", "prop")
-            
             color = COLORS.get(ent_type, (150, 150, 150))
             if "water" in tags: color = COLORS["water"]
             elif "plant" in tags: color = COLORS["plant"]
             elif "wood" in tags: color = COLORS["wood"]
             elif "stone" in tags: color = COLORS["stone"]
             elif "cold" in tags: color = COLORS["cold"]
-            
             if "wall" in tags: color = COLORS["wall"]
             if "terrain" in tags or ent_type == "terrain": color = COLORS["terrain"]
             if ent_type == "npc": color = COLORS["npc"]
             if ent_type == "hostile": color = COLORS["hostile"]
             if ent_type == "player": color = COLORS["player"]
             if "dead" in tags: color = COLORS["dead"]
-            
             pygame.draw.rect(screen, color, (pixel_x + 2, pixel_y + 2, CELL_SIZE - 4, CELL_SIZE - 4))
-            
             if ent_type != "terrain" and "dead" not in tags:
                 initial = "@" if ent_type == "player" else entity["name"][0].upper()
                 text_surf = icon_font.render(initial, True, (240, 240, 240))
@@ -113,382 +110,248 @@ def draw_text_wrapped(surface, text, color, rect, font, line_spacing=4):
 
 def draw_context_menu():
     if not context_menu["active"]: return
-    menu_width = 180
-    option_height = 30
-    header_height = 30
-    menu_height = (len(context_menu["options"]) * option_height) + header_height
-    menu_rect = pygame.Rect(context_menu["x"], context_menu["y"], menu_width, menu_height)
+    menu_width, opt_h, head_h = 180, 30, 30
+    menu_rect = pygame.Rect(context_menu["x"], context_menu["y"], menu_width, (len(context_menu["options"]) * opt_h) + head_h)
     pygame.draw.rect(screen, COLORS["menu_bg"], menu_rect)
     pygame.draw.rect(screen, COLORS["menu_border"], menu_rect, 2)
-    target_name = context_menu.get("target_name") or "Empty Terrain"
+    target_name = context_menu.get("target_name") or "Terrain"
     if len(target_name) > 18: target_name = target_name[:15] + "..."
     screen.blit(font.render(target_name, True, COLORS["title"]), (context_menu["x"] + 10, context_menu["y"] + 5))
-    pygame.draw.line(screen, COLORS["menu_border"], (context_menu["x"], context_menu["y"] + header_height), (context_menu["x"] + menu_width, context_menu["y"] + header_height))
-    mouse_x, mouse_y = pygame.mouse.get_pos()
+    pygame.draw.line(screen, COLORS["menu_border"], (context_menu["x"], context_menu["y"] + head_h), (context_menu["x"] + menu_width, context_menu["y"] + head_h))
+    mx, my = pygame.mouse.get_pos()
     for i, option in enumerate(context_menu["options"]):
-        opt_rect = pygame.Rect(context_menu["x"], context_menu["y"] + header_height + (i * option_height), menu_width, option_height)
-        if opt_rect.collidepoint(mouse_x, mouse_y): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
+        opt_rect = pygame.Rect(context_menu["x"], context_menu["y"] + head_h + (i * opt_h), menu_width, opt_h)
+        if opt_rect.collidepoint(mx, my): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
         screen.blit(font.render(option, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
 
 def generate_menu_options(entity, player, page="main"):
     if not entity: return ["Move Here", "Examine Area", "Cancel"]
-    
-    tags = entity.get("tags", [])
-    ent_type = entity.get("type", "prop")
-    
-    # Get all valid actions from registry
+    tags = entity.get("tags", []); ent_type = entity.get("type", "prop")
     valid_actions = actions.get_valid_actions(player, entity)
     options = []
-
     if page == "main":
         if "player" in tags: options.append("Examine Self")
-        
-        # 1. Essential context actions
         if "container" in tags: options.append("Open")
         if "dead" in tags: options.append("Loot")
         if ent_type == "hostile" and "dead" not in tags: options.append("Attack")
-        
-        # 2. Most logical stat actions (Top 2 unique logical ones)
-        # We find actions that the player is actually "good" at
         stat_actions = []
         for act in valid_actions:
             best_stat = entities.get_best_stat_for_action(player, act)
-            if best_stat: # Only include actions that actually use stats
-                stat_val = entities.get_stat(player, best_stat)
-                stat_actions.append((act, best_stat, stat_val))
-        
-        # Sort by player's stat value
+            if best_stat: stat_actions.append((act, best_stat, entities.get_stat(player, best_stat)))
         stat_actions.sort(key=lambda x: x[2], reverse=True)
-        
-        # Take top 2
-        for i in range(min(2, len(stat_actions))):
-            act, stat, val = stat_actions[i]
-            options.append(f"[{stat}] {act}")
-            
+        for i in range(min(2, len(stat_actions))): options.append(f"[{stat_actions[i][1]}] {stat_actions[i][0]}")
         options.append("Examine")
-        if len(valid_actions) > 3: # Loot, Open, Examine already take space
-            options.append("More Actions...")
-            
+        if len(valid_actions) > 3: options.append("More Actions...")
     elif page == "more":
-        # Show all valid actions from the registry
         for act in valid_actions:
-            best_stat = entities.get_best_stat_for_action(player, act)
-            if best_stat:
-                options.append(f"[{best_stat}] {act}")
-            else:
-                options.append(act) # Generic actions like Loot
+            bs = entities.get_best_stat_for_action(player, act)
+            if bs: options.append(f"[{bs}] {act}")
+            else: options.append(act)
         options.append("Back")
-
-    options.append("Cancel")
-    
-    # Remove duplicates while preserving order
-    seen = set()
+    options.append("Cancel"); seen = set()
     return [x for x in options if not (x in seen or seen.add(x))]
 
 def draw_main_menu():
     screen.fill(COLORS["bg"])
     screen.blit(title_font.render("SHATTERLANDS", True, COLORS["title"]), title_font.render("SHATTERLANDS", True, COLORS["title"]).get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4)))
-    screen.blit(font.render("Tactical Sim Engine", True, COLORS["text"]), font.render("Tactical Sim Engine", True, COLORS["text"]).get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 + 40)))
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    btn_x = (WINDOW_WIDTH // 2) - 100
-    buttons = [
-        {"rect": pygame.Rect(btn_x, WINDOW_HEIGHT // 2, 200, 50), "text": "New Game", "action": "NEW_GAME"},
-        {"rect": pygame.Rect(btn_x, WINDOW_HEIGHT // 2 + 70, 200, 50), "text": "Continue", "action": "LOAD_GAME"},
-        {"rect": pygame.Rect(btn_x, WINDOW_HEIGHT // 2 + 140, 200, 50), "text": "Quit", "action": "QUIT"}
-    ]
-    for btn in buttons:
-        pygame.draw.rect(screen, COLORS["menu_hover"] if btn["rect"].collidepoint(mouse_x, mouse_y) else COLORS["menu_bg"], btn["rect"])
+    mx, my = pygame.mouse.get_pos(); bx = (WINDOW_WIDTH // 2) - 100
+    btns = [{"rect": pygame.Rect(bx, WINDOW_HEIGHT // 2, 200, 50), "text": "New Game", "action": "NEW_GAME"}, {"rect": pygame.Rect(bx, WINDOW_HEIGHT // 2 + 70, 200, 50), "text": "Continue", "action": "LOAD_GAME"}, {"rect": pygame.Rect(bx, WINDOW_HEIGHT // 2 + 140, 200, 50), "text": "Quit", "action": "QUIT"}]
+    for btn in btns:
+        pygame.draw.rect(screen, COLORS["menu_hover"] if btn["rect"].collidepoint(mx, my) else COLORS["menu_bg"], btn["rect"])
         pygame.draw.rect(screen, COLORS["menu_border"], btn["rect"], 2)
         screen.blit(font.render(btn["text"], True, COLORS["text"]), font.render(btn["text"], True, COLORS["text"]).get_rect(center=btn["rect"].center))
-    pygame.display.flip()
-    return buttons
+    pygame.display.flip(); return btns
 
 def draw_tactical_screen(map_data, cam_x, cam_y):
-    screen.fill(COLORS["bg"])
-    draw_grid()
-    draw_entities(map_data, cam_x, cam_y)
-    draw_context_menu()
+    screen.fill(COLORS["bg"]); draw_grid(); draw_entities(map_data, cam_x, cam_y); draw_context_menu()
     pygame.draw.rect(screen, COLORS["ui_bg"], (0, WINDOW_HEIGHT - UI_HEIGHT, WINDOW_WIDTH, UI_HEIGHT))
     pygame.draw.line(screen, (100, 100, 100), (0, WINDOW_HEIGHT - UI_HEIGHT), (WINDOW_WIDTH, WINDOW_HEIGHT - UI_HEIGHT), 2)
     draw_text_wrapped(screen, status_text, COLORS["text"], pygame.Rect(15, WINDOW_HEIGHT - UI_HEIGHT + 15, WINDOW_WIDTH - 30, UI_HEIGHT - 30), font)
+    
+    # MODE INDICATOR
+    is_combat = map_data.get("meta", {}).get("in_combat", False)
     global_pos = map_data.get("meta", {}).get("global_pos", [0,0])
-    screen.blit(font.render(f"World: {global_pos} | Local: {cam_x},{cam_y} | Time: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (WINDOW_WIDTH - 350, 10))
+    player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
+    if is_combat:
+        mode_color = COLORS["hostile"]
+        mode_text = "🚨 ENCOUNTER MODE 🚨"
+    else:
+        mode_color = COLORS["npc"]
+        mode_text = "👁️ EXPLORE MODE (Free)"
+        
+    screen.blit(title_font.render(mode_text, True, mode_color), (WINDOW_WIDTH - 350, 10))
+    
+    # RIGID PULSE HUD (Only show in combat)
+    if is_combat:
+        beats = player.get("resources", {}).get("beats", {}) if player else {}
+        m, s, f = beats.get("move", 0), beats.get("stamina", 0), beats.get("focus", 0)
+        tactic = entities.get_best_clash_tactic(player) if player else "N/A"
+        beat_str = f"PULSE: M:[{m}] S:[{s}] F:[{f}] | Tactic: {tactic}"
+        screen.blit(font.render(beat_str, True, COLORS["title"]), (WINDOW_WIDTH - 350, 40))
+    else:
+        screen.blit(font.render(f"World: {global_pos} | Clock: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (WINDOW_WIDTH - 350, 40))
 
 def draw_transition_prompt():
-    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-    overlay.set_alpha(150)
-    overlay.fill((0, 0, 0))
-    screen.blit(overlay, (0, 0))
-    prompt_rect = pygame.Rect((WINDOW_WIDTH - 300)//2, (WINDOW_HEIGHT - 150)//2, 300, 150)
-    pygame.draw.rect(screen, COLORS["menu_bg"], prompt_rect)
-    pygame.draw.rect(screen, COLORS["menu_border"], prompt_rect, 2)
-    text_surf = font.render("Travel to a new region?", True, COLORS["text"])
-    screen.blit(text_surf, text_surf.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 30)))
-    btn_yes = pygame.Rect(WINDOW_WIDTH//2 - 90, WINDOW_HEIGHT//2 + 10, 80, 40)
-    btn_no = pygame.Rect(WINDOW_WIDTH//2 + 10, WINDOW_HEIGHT//2 + 10, 80, 40)
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    pygame.draw.rect(screen, COLORS["menu_hover"] if btn_yes.collidepoint(mouse_x, mouse_y) else COLORS["ui_bg"], btn_yes)
-    pygame.draw.rect(screen, COLORS["menu_hover"] if btn_no.collidepoint(mouse_x, mouse_y) else COLORS["ui_bg"], btn_no)
-    pygame.draw.rect(screen, COLORS["menu_border"], btn_yes, 1)
-    pygame.draw.rect(screen, COLORS["menu_border"], btn_no, 1)
-    screen.blit(font.render("Yes", True, COLORS["text"]), font.render("Yes", True, COLORS["text"]).get_rect(center=btn_yes.center))
-    screen.blit(font.render("No", True, COLORS["text"]), font.render("No", True, COLORS["text"]).get_rect(center=btn_no.center))
-    pygame.display.flip()
-    return btn_yes, btn_no
+    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT)); overlay.set_alpha(150); overlay.fill((0, 0, 0)); screen.blit(overlay, (0, 0))
+    pr = pygame.Rect((WINDOW_WIDTH - 300)//2, (WINDOW_HEIGHT - 150)//2, 300, 150); pygame.draw.rect(screen, COLORS["menu_bg"], pr); pygame.draw.rect(screen, COLORS["menu_border"], pr, 2)
+    screen.blit(font.render("Travel to a new region?", True, COLORS["text"]), font.render("Travel to a new region?", True, COLORS["text"]).get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 30)))
+    by, bn = pygame.Rect(WINDOW_WIDTH//2 - 90, WINDOW_HEIGHT//2 + 10, 80, 40), pygame.Rect(WINDOW_WIDTH//2 + 10, WINDOW_HEIGHT//2 + 10, 80, 40)
+    mx, my = pygame.mouse.get_pos(); pygame.draw.rect(screen, COLORS["menu_hover"] if by.collidepoint(mx, my) else COLORS["ui_bg"], by); pygame.draw.rect(screen, COLORS["menu_hover"] if bn.collidepoint(mx, my) else COLORS["ui_bg"], bn)
+    pygame.draw.rect(screen, COLORS["menu_border"], by, 1); pygame.draw.rect(screen, COLORS["menu_border"], bn, 1)
+    screen.blit(font.render("Yes", True, COLORS["text"]), font.render("Yes", True, COLORS["text"]).get_rect(center=by.center)); screen.blit(font.render("No", True, COLORS["text"]), font.render("No", True, COLORS["text"]).get_rect(center=bn.center))
+    pygame.display.flip(); return by, bn
 
 def attempt_move(grid_x, grid_y, map_data):
     global app_state, transition_target, status_text
-    grid_w, grid_h = map_data.get("meta", {}).get("grid_size", [50, 50])
-    
+    gw, gh = map_data.get("meta", {}).get("grid_size", [50, 50])
     for e in map_data.get("entities", []):
         if e["pos"] == [grid_x, grid_y] and ("solid" in e.get("tags", []) or e.get("hp", 0) > 0):
-            status_text = f"System: Path blocked by {e['name']}."
-            return 
-
-    if grid_x <= 0 or grid_x >= grid_w - 1 or grid_y <= 0 or grid_y >= grid_h - 1:
-        app_state = "TRANSITION_PROMPT"
-        transition_target = [grid_x, grid_y]
-        status_text = "System: Awaiting travel confirmation..."
+            status_text = f"System: Path blocked by {e['name']}."; return 
+    if grid_x <= 0 or grid_x >= gw - 1 or grid_y <= 0 or grid_y >= gh - 1:
+        app_state = "TRANSITION_PROMPT"; transition_target = [grid_x, grid_y]; status_text = "System: Awaiting confirmation..."
     else:
-        engine.execute_move("char_01", grid_x, grid_y)
-        status_text = f"System: Valerius moved to [{grid_x}, {grid_y}]."
+        res = engine.execute_move("char_01", grid_x, grid_y)
+        if "beats" in res: status_text = f"System: {res}"
+        else: status_text = f"System: Moved to [{grid_x}, {grid_y}]."
+
+def trigger_narration():
+    global status_text; status_text = "Director: [Thinking...]"; new_text = narrator.generate_flavor_text(); status_text = f"Director: {new_text}"
 
 def main():
     global status_text, app_state, transition_target
-    clock = pygame.time.Clock()
-    map_data = load_map_data()
-    cam_x, cam_y = get_camera_offset(map_data)
-
+    clock = pygame.time.Clock(); map_data = load_map_data(); cam_x, cam_y = get_camera_offset(map_data)
     while True:
         if app_state == "MAIN_MENU":
-            buttons = draw_main_menu()
+            btns = draw_main_menu()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    for btn in buttons:
-                        if btn["rect"].collidepoint(event.pos[0], event.pos[1]):
-                            if btn["action"] == "NEW_GAME":
-                                engine.start_new_game()
-                                map_data = load_map_data()
-                                status_text = "Director: A new journey begins."
-                                app_state = "PLAYING"
-                            elif btn["action"] == "LOAD_GAME":
-                                map_data = load_map_data()
-                                status_text = "Director: Welcome back."
-                                app_state = "PLAYING"
-                            elif btn["action"] == "QUIT":
-                                pygame.quit(); sys.exit()
-
+                    for btn in btns:
+                        if btn["rect"].collidepoint(event.pos):
+                            if btn["action"] == "NEW_GAME": engine.start_new_game(); map_data = load_map_data(); status_text = "Director: A new journey."; app_state = "PLAYING"
+                            elif btn["action"] == "LOAD_GAME": map_data = load_map_data(); status_text = "Director: Welcome back."; app_state = "PLAYING"
+                            elif btn["action"] == "QUIT": pygame.quit(); sys.exit()
         elif app_state == "CHARACTER_SHEET":
-            draw_tactical_screen(map_data, cam_x, cam_y)
-            clickable_zones = ui_manager.draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH, WINDOW_HEIGHT)
-            
+            draw_tactical_screen(map_data, cam_x, cam_y); clickable_zones = ui_manager.draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH, WINDOW_HEIGHT)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
-                elif event.type == pygame.KEYDOWN and event.key in [pygame.K_c, pygame.K_ESCAPE]:
-                    ui_manager.UI_STATE["context_menu"]["active"] = False
-                    app_state = "PLAYING"
-                
+                elif event.type == pygame.KEYDOWN and event.key in [pygame.K_c, pygame.K_ESCAPE]: ui_manager.UI_STATE["context_menu"]["active"] = False; app_state = "PLAYING"
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    clicked_zone = False
-                    
-                    if event.button == 1: # LEFT CLICK
+                    cz_hit = False
+                    if event.button == 1:
                         for zone in clickable_zones:
                             if zone["rect"].collidepoint(event.pos):
-                                clicked_zone = True
-                                
-                                if zone["action"] == "switch_tab":
-                                    ui_manager.UI_STATE["active_tab"] = zone["target"]
-                                    ui_manager.UI_STATE["context_menu"]["active"] = False
-                                    
-                                elif zone["action"] == "unequip":
-                                    engine.execute_unequip("char_01", zone["slot"])
-                                    map_data = load_map_data()
-                                    
+                                cz_hit = True
+                                if zone["action"] == "switch_tab": ui_manager.UI_STATE["active_tab"] = zone["target"]
+                                elif zone["action"] == "unequip": engine.execute_unequip("char_01", zone["slot"]); map_data = load_map_data()
                                 elif zone["action"] == "context_action":
                                     if zone["choice"] == "Equip": engine.execute_equip("char_01", zone["item"])
                                     elif zone["choice"] == "Drop": engine.execute_drop("char_01", zone["item"])
                                     elif zone["choice"] == "Use": engine.execute_use("char_01", zone["item"])
-                                    ui_manager.UI_STATE["context_menu"]["active"] = False
-                                    map_data = load_map_data()
+                                    ui_manager.UI_STATE["context_menu"]["active"] = False; map_data = load_map_data()
                                 break
-                        
-                        if not clicked_zone: ui_manager.UI_STATE["context_menu"]["active"] = False
-                            
-                    elif event.button == 3: # RIGHT CLICK
+                        if not cz_hit: ui_manager.UI_STATE["context_menu"]["active"] = False
+                    elif event.button == 3:
                         for zone in clickable_zones:
                             if zone["rect"].collidepoint(event.pos) and zone["action"] == "inventory_item":
-                                item = zone["item"]
-                                options = []
-                                items_db = entities.load_items()
-                                if item in items_db.get("weapons", {}) or item in items_db.get("armor", {}) or item in items_db.get("accessories", {}):
-                                    options.append("Equip")
-                                else:
-                                    options.append("Use")
-                                options.append("Drop")
-                                
-                                ui_manager.UI_STATE["context_menu"] = {
-                                    "active": True, "x": event.pos[0], "y": event.pos[1],
-                                    "item": item, "options": options
-                                }
-
+                                item = zone["item"]; options = ["Equip" if item in actions.get_valid_actions(None, None) else "Use", "Drop"]; ui_manager.UI_STATE["context_menu"] = {"active": True, "x": event.pos[0], "y": event.pos[1], "item": item, "options": options}
+            pygame.display.flip()
         elif app_state == "PLAYING":
-            cam_x, cam_y = get_camera_offset(map_data)
+            # Check for Death State
             player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
-            
+            if player and player.get("hp", 0) <= 0:
+                print("\n[DEAD] CAPTAIN JAX HAS DIED. THE DRIFT CLAIMS ANOTHER. [DEAD]")
+                app_state = "GAME_OVER"
+                continue
+
+            draw_tactical_screen(map_data, cam_x, cam_y)
+            cam_x, cam_y = get_camera_offset(map_data)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE: app_state = "MAIN_MENU"
                     elif event.key == pygame.K_c: app_state = "CHARACTER_SHEET"
+                    elif event.key == pygame.K_SPACE: engine.end_player_turn(); map_data = load_map_data(); status_text = "System: Pulse reset."
                     else:
-                        if player:
-                            if "dead" in player.get("tags", []):
-                                status_text = "System: YOU ARE DEAD. Game Over. (Press ESC)"
-                            else:
-                                px, py = player["pos"]
-                                if event.key in [pygame.K_w, pygame.K_UP]: attempt_move(px, py - 1, map_data)
-                                elif event.key in [pygame.K_s, pygame.K_DOWN]: attempt_move(px, py + 1, map_data)
-                                elif event.key in [pygame.K_a, pygame.K_LEFT]: attempt_move(px - 1, py, map_data)
-                                elif event.key in [pygame.K_d, pygame.K_RIGHT]: attempt_move(px + 1, py, map_data)
-                
+                        if player and "dead" not in player.get("tags", []):
+                            px, py = player["pos"]
+                            if event.key in [pygame.K_w, pygame.K_UP]: attempt_move(px, py - 1, map_data)
+                            elif event.key in [pygame.K_s, pygame.K_DOWN]: attempt_move(px, py + 1, map_data)
+                            elif event.key in [pygame.K_a, pygame.K_LEFT]: attempt_move(px - 1, py, map_data)
+                            elif event.key in [pygame.K_d, pygame.K_RIGHT]: attempt_move(px + 1, py, map_data)
+                            map_data = load_map_data()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_x, mouse_y = event.pos
-                    grid_x = (mouse_x // CELL_SIZE) + cam_x
-                    grid_y = (mouse_y // CELL_SIZE) + cam_y
-                    
-                    # FIX 2: Priority Sorting so we click Bodies instead of Floors
-                    ents_at_pos = [e for e in map_data.get("entities", []) if e["pos"] == [grid_x, grid_y]]
-                    clicked_entity = None
-                    for p_type in ["player", "hostile", "npc"]:
-                        if not clicked_entity: clicked_entity = next((e for e in ents_at_pos if e.get("type") == p_type), None)
-                    if not clicked_entity: clicked_entity = next((e for e in ents_at_pos if "dead" in e.get("tags", [])), None)
-                    if not clicked_entity: clicked_entity = next((e for e in ents_at_pos if e.get("type") == "prop"), None)
-                    if not clicked_entity: clicked_entity = ents_at_pos[0] if ents_at_pos else None
-                    
-                    if player and "dead" in player.get("tags", []):
-                        status_text = "System: YOU ARE DEAD. Game Over. (Press ESC)"
-                        context_menu["active"] = False
-                        continue
-
-                    if event.button == 1: 
+                    mx, my = event.pos; gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
+                    ents = [e for e in map_data.get("entities", []) if e["pos"] == [gx, gy]]; clicked_entity = None
+                    # PRIORITIZE LIVING HOSTILES
+                    clicked_entity = next((e for e in ents if e.get("type") == "hostile" and "dead" not in e.get("tags", [])), None)
+                    if not clicked_entity: clicked_entity = next((e for e in ents if e.get("type") == "npc" and "dead" not in e.get("tags", [])), None)
+                    if not clicked_entity: clicked_entity = next((e for e in ents if e.get("type") == "player"), None)
+                    if not clicked_entity: clicked_entity = next((e for e in ents if "dead" in e.get("tags", [])), None)
+                    if not clicked_entity: clicked_entity = next((e for e in ents if e.get("type") == "prop"), None)
+                    if not clicked_entity and ents: clicked_entity = ents[0]
+                    if player and "dead" in player.get("tags", []): continue
+                    if event.button == 1:
                         if context_menu["active"]:
-                            menu_width, option_height, header_height = 180, 30, 30
-                            menu_rect = pygame.Rect(context_menu["x"], context_menu["y"], menu_width, (len(context_menu["options"]) * option_height) + header_height)
-                            
-                            if menu_rect.collidepoint(mouse_x, mouse_y):
-                                if mouse_y > context_menu["y"] + header_height:
-                                    index = (mouse_y - (context_menu["y"] + header_height)) // option_height
-                                    if index < len(context_menu["options"]):
-                                        selection = context_menu["options"][index]
-                                        
-                                        if selection == "More Actions...":
-                                            context_menu["page"] = "more"
-                                            # We need to find the target entity again or store it in context_menu
-                                            # For now, let's look it up by ID/Pos
-                                            target = next((e for e in map_data.get("entities", []) if e.get("id") == context_menu["target_id"]), None)
-                                            context_menu["options"] = generate_menu_options(target, player, page="more")
-                                            continue # Keep menu open
-                                            
-                                        elif selection == "Back":
-                                            context_menu["page"] = "main"
-                                            target = next((e for e in map_data.get("entities", []) if e.get("id") == context_menu["target_id"]), None)
-                                            context_menu["options"] = generate_menu_options(target, player, page="main")
-                                            continue # Keep menu open
-
-                                        if selection != "Cancel":
-                                            status_text = f"System: Executing {selection}..."
-                                            draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
-                                            
-                                            if selection in ["Loot", "Open"]: 
-                                                res = engine.execute_loot("char_01", context_menu["target_id"])
-                                                if res == "Too far.": status_text = "System: Too far away to loot!"
-                                                elif res == "Empty.": status_text = "System: Target is empty."
-                                                else: status_text = "System: Looted all items."
-                                            elif selection == "Attack": 
-                                                engine.execute_attack("char_01", context_menu["target_id"])
-                                            elif selection == "Examine": 
-                                                engine.execute_examine("char_01", context_menu["target_id"])
-                                            elif selection == "Move Here": 
-                                                attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
-                                            elif selection == "Examine Area": 
-                                                engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
-                                            elif selection == "Examine Self": 
-                                                engine.execute_examine("char_01", "char_01")
-                                            # NEW STAT ACTION ROUTER
-                                            elif selection.startswith("[") and "]" in selection:
-                                                engine.execute_stat_action("char_01", context_menu["target_id"], selection)
-                                            
-                                            if selection not in ["Move Here", "Cancel", "Loot", "Open"] and not selection.startswith("["):
-                                                status_text = f"Director: {narrator.generate_flavor_text()}"
-                            
-                            context_menu["active"] = False
-                            continue
-
-                        elif mouse_y < WINDOW_HEIGHT - UI_HEIGHT:
-                            if clicked_entity and "hostile" in clicked_entity.get("tags", []):
-                                status_text = "System: Attacking... (AI is thinking)"
-                                draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
-                                engine.execute_attack("char_01", clicked_entity.get("id", clicked_entity["name"]))
-                                status_text = f"Director: {narrator.generate_flavor_text()}"
-                            elif not clicked_entity:
-                                attempt_move(grid_x, grid_y, map_data)
-
+                            mw, oh, hh = 180, 30, 30; mr = pygame.Rect(context_menu["x"], context_menu["y"], mw, (len(context_menu["options"]) * oh) + hh)
+                            if mr.collidepoint(mx, my):
+                                if my > context_menu["y"] + hh:
+                                    idx = (my - (context_menu["y"] + hh)) // oh
+                                    if idx < len(context_menu["options"]):
+                                        sel = context_menu["options"][idx]
+                                        if sel == "More Actions...": context_menu["page"] = "more"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "more"); continue
+                                        elif sel == "Back": context_menu["page"] = "main"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "main"); continue
+                                        if sel != "Cancel":
+                                            status_text = f"System: {sel}..."; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
+                                            if sel in ["Loot", "Open"]: engine.execute_loot("char_01", context_menu["target_id"])
+                                            elif sel == "Attack": engine.execute_attack("char_01", context_menu["target_id"])
+                                            elif sel == "Examine": engine.execute_examine("char_01", context_menu["target_id"])
+                                            elif sel == "Move Here": attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
+                                            elif sel == "Examine Area": engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
+                                            elif sel == "Examine Self": engine.execute_examine("char_01", "char_01")
+                                            elif sel.startswith("["): engine.execute_stat_action("char_01", context_menu["target_id"], sel)
+                                            map_data = load_map_data()
+                                            if sel not in ["Move Here", "Cancel", "Loot", "Open"] and not sel.startswith("["): threading.Thread(target=trigger_narration, daemon=True).start()
+                            context_menu["active"] = False; continue
+                        elif my < WINDOW_HEIGHT - UI_HEIGHT:
+                            if clicked_entity and "hostile" in clicked_entity.get("tags", []) and "dead" not in clicked_entity.get("tags", []):
+                                status_text = "System: Attacking..."; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
+                                res = engine.execute_attack("char_01", clicked_entity.get("id", clicked_entity["name"]))
+                                map_data = load_map_data()
+                                # ONLY NARRATE IF ACTION SUCCEEDED
+                                if "No stamina beats" not in res and "Not enough stamina" not in res:
+                                    threading.Thread(target=trigger_narration, daemon=True).start()
+                            elif not clicked_entity: attempt_move(gx, gy, map_data); map_data = load_map_data()
                     elif event.button == 3:
-                        if mouse_y < WINDOW_HEIGHT - UI_HEIGHT:
-                            context_menu["active"] = True
-                            context_menu["x"] = mouse_x
-                            context_menu["y"] = mouse_y
-                            context_menu["page"] = "main"
-                            context_menu["target_pos"] = [grid_x, grid_y]
-                            context_menu["target_name"] = clicked_entity["name"] if clicked_entity else None
-                            context_menu["target_id"] = clicked_entity.get("id", clicked_entity["name"]) if clicked_entity else None
-                            # FIX: Pass the player entity to the menu generator
-                            context_menu["options"] = generate_menu_options(clicked_entity, player, page="main")
-
-            # --- End of PLAYING event loop ---
-            map_data = load_map_data()
-            cam_x, cam_y = get_camera_offset(map_data)
-            draw_tactical_screen(map_data, cam_x, cam_y)
-            
-            # --- NEW: AT-A-GLANCE HOVER TOOLTIPS ---
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Only draw tooltips if we are on the map (not the UI) and no menus are open
-            if not context_menu["active"] and mouse_y < WINDOW_HEIGHT - UI_HEIGHT:
-                hover_grid_x = (mouse_x // CELL_SIZE) + cam_x
-                hover_grid_y = (mouse_y // CELL_SIZE) + cam_y
-                
-                # Use our Z-Index logic to prioritize bodies over the floor
-                ents_at_pos = [e for e in map_data.get("entities", []) if e["pos"] == [hover_grid_x, hover_grid_y]]
-                hovered_ent = None
-                for p_type in ["player", "hostile", "npc"]:
-                    if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if e.get("type") == p_type), None)
-                if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if "dead" in e.get("tags", [])), None)
-                if not hovered_ent: hovered_ent = next((e for e in ents_at_pos if e.get("type") == "prop"), None)
-                
-                if hovered_ent:
-                    ui_manager.draw_hover_tooltip(screen, hovered_ent, (mouse_x, mouse_y), font, COLORS)
-            # ----------------------------------------
-
+                        if my < WINDOW_HEIGHT - UI_HEIGHT: context_menu["active"] = True; context_menu["x"], context_menu["y"] = mx, my; context_menu["page"] = "main"; context_menu["target_pos"] = [gx, gy]; context_menu["target_name"] = clicked_entity["name"] if clicked_entity else None; context_menu["target_id"] = clicked_entity.get("id", clicked_entity["name"]) if clicked_entity else None; context_menu["options"] = generate_menu_options(clicked_entity, player, "main")
+            mx, my = pygame.mouse.get_pos()
+            if not context_menu["active"] and my < WINDOW_HEIGHT - UI_HEIGHT:
+                hgx, hgy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y; ents = [e for e in map_data.get("entities", []) if e["pos"] == [hgx, hgy]]; hovered = None
+                for pt in ["player", "hostile", "npc"]:
+                    if not hovered: hovered = next((e for e in ents if e.get("type") == pt), None)
+                if not hovered: hovered = next((e for e in ents if "dead" in e.get("tags", [])), None)
+                if not hovered: hovered = next((e for e in ents if e.get("type") == "prop"), None)
+                if hovered: ui_manager.draw_hover_tooltip(screen, hovered, (mx, my), font, COLORS)
             pygame.display.flip()
-            
         elif app_state == "TRANSITION_PROMPT":
-            draw_tactical_screen(map_data, cam_x, cam_y)
-            btn_yes, btn_no = draw_transition_prompt()
-            
+            draw_tactical_screen(map_data, cam_x, cam_y); by, bn = draw_transition_prompt()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if btn_yes.collidepoint(event.pos):
-                        engine.execute_transition(transition_target[0], transition_target[1])
-                        map_data = load_map_data()
-                        cam_x, cam_y = get_camera_offset(map_data)
-                        status_text = "Director: You have entered a new region."
-                        app_state = "PLAYING"
-                    elif btn_no.collidepoint(event.pos):
-                        status_text = "System: Transition cancelled."
-                        app_state = "PLAYING"
-
+                    if by.collidepoint(event.pos): engine.execute_transition(transition_target[0], transition_target[1]); map_data = load_map_data(); cam_x, cam_y = get_camera_offset(map_data); status_text = "Director: Entering region."; app_state = "PLAYING"
+                    elif bn.collidepoint(event.pos): status_text = "System: Cancelled."; app_state = "PLAYING"
+        elif app_state == "GAME_OVER":
+            screen.fill((0, 0, 0))
+            msg = title_font.render("☠️ GAME OVER ☠️", True, COLORS["hostile"])
+            sub = font.render("Captain Jax has returned to the Drift.", True, COLORS["text"])
+            tip = font.render("Press ESC to return to Main Menu", True, (100, 100, 100))
+            screen.blit(msg, msg.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 40)))
+            screen.blit(sub, sub.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 10)))
+            screen.blit(tip, tip.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 50)))
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: pygame.quit(); sys.exit()
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: app_state = "MAIN_MENU"
         clock.tick(30)
 
 if __name__ == "__main__":

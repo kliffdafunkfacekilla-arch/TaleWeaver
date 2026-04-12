@@ -78,6 +78,15 @@ ACTION_REGISTRY = {
     "Celestial Study": {"stats": ["Willpower"], "targets": ["prop", "terrain"], "tags": ["legal"], "cost": {"type": "focus", "val": 1}, "category": "Knowledge", "desc": "Identifying loopholes in magical law."},
     "Command Obedience": {"stats": ["Willpower"], "targets": ["npc"], "tags": [], "cost": {"type": "focus", "val": 1}, "category": "Social", "desc": "Authoritarian intimidation / absolute command."},
     
+    "Disengage": {
+        "stats": ["Vitality", "Finesse"],
+        "targets": ["player"],
+        "tags": [],
+        "cost": {"type": "stamina", "val": 1},
+        "category": "Maneuver",
+        "desc": "Prepare to safely move out of hostile threat zones."
+    },
+    
     # Generic Actions (Not stat gated)
     "Examine": {"stats": [], "targets": ["prop", "npc", "hostile", "player", "terrain"], "tags": [], "cost": {"type": "focus", "val": 0}, "category": "General", "desc": "A basic look at the target."},
     "Loot": {"stats": [], "targets": ["prop", "npc", "hostile"], "tags": ["dead", "container"], "cost": {"type": "stamina", "val": 0}, "category": "General", "desc": "Take items from target."},

@@ -1,38 +1,88 @@
 import json
 import random
 import os
+import time
 import map_generator
 import entities
 import db_manager
 import actions
 
 def load_state():
+    """Loads the map state with a retry loop to handle Windows file-sharing collisions."""
     if not os.path.exists("local_map_state.json"): return start_new_game()
-    try:
-        with open("local_map_state.json", "r") as f:
-            data = json.load(f)
-            if "entities" not in data: return start_new_game()
-            return data
-    except:
-        return start_new_game()
+    
+    for _ in range(5):
+        try:
+            with open("local_map_state.json", "r") as f:
+                data = json.load(f)
+                if "entities" not in data: return start_new_game()
+                return data
+        except (PermissionError, json.JSONDecodeError):
+            time.sleep(0.01) # Tiny wait for the other thread/process to release the file
+            continue
+        except Exception:
+            # Only reset the game on catastrophic failures, not temporary locks
+            return start_new_game()
+    return start_new_game()
 
 def save_state(state):
-    with open("local_map_state.json", "w") as f: json.dump(state, f, indent=2)
-    
+    """Saves the state with a brief retry for high-frequency writes."""
+    for _ in range(5):
+        try:
+            with open("local_map_state.json", "w") as f: 
+                json.dump(state, f, indent=2)
+            break
+        except PermissionError:
+            time.sleep(0.01)
+            continue
+
     g_pos = state.get("meta", {}).get("global_pos", [0,0])
     db_manager.save_chunk(g_pos[0], g_pos[1], state)
 
 def start_new_game():
     db_manager.reset_world()
     map_generator.generate_local_map([0,0], [25,25])
-    with open("local_map_state.json", "r") as f: state = json.load(f)
-    state.setdefault("meta", {})["clock"] = 0 
     
+    # Robust read for the fresh map
+    state = None
+    for _ in range(5):
+        try:
+            with open("local_map_state.json", "r") as f: state = json.load(f); break
+        except: time.sleep(0.01)
+    
+    if not state: state = {"entities": [], "meta": {"clock": 0, "global_pos": [0,0]}}
+    
+    state.setdefault("meta", {})["clock"] = 0 
     player = next((e for e in state["entities"] if e["type"] == "player"), None)
     if player: entities.refresh_beats(player)
     
     save_state(state)
     return state
+
+def check_encounter_end(state, player):
+    """Checks if combat should end based on hostile distance or death."""
+    if not state.get("meta", {}).get("in_combat", False): return False
+    
+    hostiles = [e for e in state.get("entities", []) if "hostile" in e.get("tags", []) and e.get("hp", 0) > 0]
+    if not hostiles:
+        state["meta"]["in_combat"] = False
+        print("\n[System] Threat eliminated. Returning to Explore Mode.")
+        return True
+        
+    # Distance Exit: If all hostiles are > 10 tiles away, drop combat
+    px, py = player["pos"]
+    all_far = True
+    for h in hostiles:
+        hx, hy = h["pos"]
+        if max(abs(px - hx), abs(py - hy)) <= 10:
+            all_far = False; break
+            
+    if all_far:
+        state["meta"]["in_combat"] = False
+        print("\n[System] Distance maintained. Enemies have lost interest.")
+        return True
+        
+    return False
 
 def execute_world_turn(state):
     player = next((e for e in state.get("entities", []) if e.get("type") == "player"), None)
@@ -43,7 +93,7 @@ def execute_world_turn(state):
         
     npc_actions = []
     for npc in state.get("entities", []):
-        if npc.get("type") == "hostile":
+        if npc.get("type") == "hostile" and npc.get("hp", 0) > 0:
             # Refresh NPC beats for their turn (simple pass)
             entities.refresh_beats(npc)
             
@@ -76,6 +126,8 @@ def end_player_turn():
     player = next((e for e in state.get("entities", []) if e.get("type") == "player"), None)
     if not player or "dead" in player.get("tags", []): return
 
+    check_encounter_end(state, player)
+
     print("\n--- [ ENEMY PHASE ] ---")
     execute_world_turn(state) 
     print("\n--- [ NEW ROUND ] ---")
@@ -94,8 +146,8 @@ def end_player_turn():
     # Determine Regen Rate
     if loadout_percent <= 50: regen_amount = 2
     elif loadout_percent <= 75: regen_amount = 1
-    elif loadout_percent <= 100: regen_amount = 0
-    else: regen_amount = -1
+    elif loadout_percent <= 100: regen_amount = 1 # You always recoup something if at parity
+    else: regen_amount = 0 # No recovery if over-encumbered, but no longer -1!
     
     # Wipe temporary combat tags
     for e in state.get("entities", []):
@@ -163,18 +215,15 @@ def execute_attack(actor_id, target_id):
         entities.refresh_beats(actor) 
     else:
         if not entities.consume_beat(actor, "stamina"):
-            print(f"\n[System] {actor_name} has no Stamina Beats remaining this round!")
-            return "No stamina beats left."
+            return "No stamina beats remaining this round! Press SPACE."
 
     # THEN check for the actual Stamina token cost
     if not entities.spend_stamina(actor, 2):
-        print(f"\n[System] {actor_name} is physically exhausted (0 Stamina tokens)!")
-        return "Not enough stamina tokens."
+        return f"{actor_name} is too exhausted (low Stamina tokens)!"
         
     dx, dy = abs(actor["pos"][0] - target["pos"][0]), abs(actor["pos"][1] - target["pos"][1])
     if max(dx, dy) > 1:
-        mech_result = f"{actor_name} swung at the air! {target_name} is out of melee range."
-        print(f"\n[Combat] {mech_result}")
+        mech_result = f"Target out of range."
         state["latest_action"] = {"actor": actor_name, "action": "Melee Attack", "target": target_name, "mechanical_result": mech_result}
         save_state(state); return mech_result
 
@@ -224,12 +273,7 @@ def execute_attack(actor_id, target_id):
             
         is_dead = entities.apply_damage(target, damage, "physical")
         if is_dead: 
-            if "hostile" in target.get("tags", []):
-                # Check for encounter end
-                hostiles = [e for e in state["entities"] if "hostile" in e.get("tags", []) and e.get("hp", 0) > 0]
-                if not hostiles:
-                    state.setdefault("meta", {})["in_combat"] = False
-                    print("\n[SCENE] THREAT ELIMINATED. Returning to Explore Mode.")
+            check_encounter_end(state, actor)
             mech_result = f"{crit_prefix}{damage} damage. {target_name} is DEAD."
         else: 
             mech_result = f"{crit_prefix}{damage} damage dealt. {target_name} has {target['hp']} HP left."
@@ -250,15 +294,13 @@ def execute_move(actor_id, dest_x, dest_y):
     dx, dy = abs(actor["pos"][0] - dest_x), abs(actor["pos"][1] - dest_y)
     max_dist = actor.get("speed", 5)
     if max(dx, dy) > max_dist:
-        print(f"\n[System] {dest_x, dest_y} is too far for {actor['name']} ({max_dist} limit)!")
-        return "Too far."
+        return f"Move too far! ({max_dist} cell limit)"
 
     # --- EXPLORE VS ENCOUNTER MOVEMENT ---
     is_combat = state.setdefault("meta", {}).get("in_combat", False)
     if is_combat:
         if not entities.consume_beat(actor, "move"):
-            print(f"\n[System] {actor['name']} has no Move Beats remaining!")
-            return "No move beats left."
+            return "No Move Beats remaining this round! Press SPACE."
             
         # Threat Zone Check
         actor_tags = actor.get("tags", [])
@@ -276,13 +318,15 @@ def execute_move(actor_id, dest_x, dest_y):
                             print(f"  -> HIT! {actor['name']} takes {damage} damage while turning their back!")
                         else:
                             print(f"  -> MISSED! {actor['name']} slipped away just in time.")
+                            
+        # Post-move combat check
+        check_encounter_end(state, actor)
     else:
         # EXPLORE MODE: Free movement but advances world clock
         execute_world_turn(state)
 
-    if is_combat and not entities.spend_stamina(actor, 1):
-        print(f"\n[System] {actor['name']} is too exhausted to move!")
-        return "Not enough stamina tokens."
+    if state.get("meta", {}).get("in_combat", False) and not entities.spend_stamina(actor, 1):
+        return f"Too exhausted to move (low Stamina tokens)!"
         
     actor["pos"] = [dest_x, dest_y]
     state["latest_action"] = {"actor": actor["name"], "action": "Movement", "target": f"[{dest_x}, {dest_y}]", "mechanical_result": "Moved."}
@@ -307,7 +351,7 @@ def execute_transition(dest_x, dest_y):
         new_state["meta"]["clock"] = state["meta"].get("clock", 0); save_state(new_state)
     else:
         map_generator.generate_local_map([new_g_x, new_g_y], [entry_x, entry_y], player_data=player_data)
-        with open("local_map_state.json", "r") as f: new_state = json.load(f)
+        new_state = load_state()
         new_state["meta"]["clock"] = state["meta"].get("clock", 0); save_state(new_state)
     return "Transition complete."
 
@@ -376,21 +420,20 @@ def execute_stat_action(actor_id, target_id, action_str):
     beat_type = "stamina" if stat_used in body_stats else "focus"
     
     if not entities.consume_beat(actor, beat_type):
-        print(f"\n[System] {actor['name']} has already used their {beat_type.capitalize()} Beat this round!")
-        return f"No {beat_type} beats left."
+        return f"No {beat_type} beats remaining! Press SPACE."
 
     # Tokens still follow action cost, but Beats follow the Stat.
     action_data = actions.ACTION_REGISTRY.get(action_name); cost_type = "stamina"; cost_val = 1
     if action_data: cost_type = action_data["cost"]["type"]; cost_val = action_data["cost"]["val"]
 
     if actor["resources"].get(cost_type, 0) < cost_val:
-        print(f"\n[System] Not enough {cost_type} tokens!"); return "Not enough tokens."
+        return f"Not enough {cost_type} tokens!"
     
     actor["resources"][cost_type] -= cost_val
     roll_total, roll_log = entities.roll_check(actor, stat_used)
     
     target_resist = 10; success = roll_total >= target_resist
-    mech_result = f"Action {action_name} ({stat_used}) roll {roll_total} vs DC {target_resist}. SUCCESS!" if success else "FAILED."
+    mech_result = f"Action {action_name} ({stat_used}) roll {roll_total} vs DC {target_resist}. SUCCESS!" if success else f"Action {action_name} FAILED."
     
     # Handle Tactical Effects
     if success and action_name == "Disengage":

@@ -7,6 +7,7 @@ import entities
 import ui_manager
 import actions
 import threading
+import time
 
 pygame.init()
 
@@ -46,9 +47,17 @@ context_menu = {
 }
 
 def load_map_data():
-    try:
-        with open("local_map_state.json", "r") as f: return json.load(f)
-    except FileNotFoundError: return {"entities": []}
+    """Reads the JSON map state with a retry loop for Windows file-sharing resilience."""
+    for _ in range(10):
+        try:
+            with open("local_map_state.json", "r") as f:
+                return json.load(f)
+        except (PermissionError, json.JSONDecodeError):
+            time.sleep(0.01)
+            continue
+        except FileNotFoundError:
+            return {"entities": []}
+    return {"entities": []}
 
 def get_camera_offset(map_data):
     player_pos = [25, 25] 
@@ -172,18 +181,25 @@ def draw_tactical_screen(map_data, cam_x, cam_y):
     is_combat = map_data.get("meta", {}).get("in_combat", False)
     global_pos = map_data.get("meta", {}).get("global_pos", [0,0])
     player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
+    
+    beats = player.get("resources", {}).get("beats", {}) if player else {}
+    s_beat = beats.get("stamina", 0)
+    
     if is_combat:
-        mode_color = COLORS["hostile"]
-        mode_text = "🚨 ENCOUNTER MODE 🚨"
+        if s_beat > 0:
+            mode_color = COLORS["hostile"]
+            mode_text = "🚨 ENCOUNTER MODE 🚨"
+        else:
+            mode_color = (130, 130, 130) # Dimmed
+            mode_text = "🛑 ROUND ENDED (Press SPACE) 🛑"
     else:
         mode_color = COLORS["npc"]
         mode_text = "👁️ EXPLORE MODE (Free)"
         
-    screen.blit(title_font.render(mode_text, True, mode_color), (WINDOW_WIDTH - 350, 10))
+    screen.blit(title_font.render(mode_text, True, mode_color), (WINDOW_WIDTH - 420, 10))
     
     # RIGID PULSE HUD (Only show in combat)
     if is_combat:
-        beats = player.get("resources", {}).get("beats", {}) if player else {}
         m, s, f = beats.get("move", 0), beats.get("stamina", 0), beats.get("focus", 0)
         tactic = entities.get_best_clash_tactic(player) if player else "N/A"
         beat_str = f"PULSE: M:[{m}] S:[{s}] F:[{f}] | Tactic: {tactic}"
@@ -211,8 +227,7 @@ def attempt_move(grid_x, grid_y, map_data):
         app_state = "TRANSITION_PROMPT"; transition_target = [grid_x, grid_y]; status_text = "System: Awaiting confirmation..."
     else:
         res = engine.execute_move("char_01", grid_x, grid_y)
-        if "beats" in res: status_text = f"System: {res}"
-        else: status_text = f"System: Moved to [{grid_x}, {grid_y}]."
+        status_text = f"System: {res}" # Catch beats/exhaustion failures
 
 def trigger_narration():
     global status_text; status_text = "Director: [Thinking...]"; new_text = narrator.generate_flavor_text(); status_text = f"Director: {new_text}"
@@ -303,23 +318,22 @@ def main():
                                         elif sel == "Back": context_menu["page"] = "main"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "main"); continue
                                         if sel != "Cancel":
                                             status_text = f"System: {sel}..."; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
-                                            if sel in ["Loot", "Open"]: engine.execute_loot("char_01", context_menu["target_id"])
-                                            elif sel == "Attack": engine.execute_attack("char_01", context_menu["target_id"])
-                                            elif sel == "Examine": engine.execute_examine("char_01", context_menu["target_id"])
-                                            elif sel == "Move Here": attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
-                                            elif sel == "Examine Area": engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
-                                            elif sel == "Examine Self": engine.execute_examine("char_01", "char_01")
-                                            elif sel.startswith("["): engine.execute_stat_action("char_01", context_menu["target_id"], sel)
-                                            map_data = load_map_data()
-                                            if sel not in ["Move Here", "Cancel", "Loot", "Open"] and not sel.startswith("["): threading.Thread(target=trigger_narration, daemon=True).start()
+                                            if sel in ["Loot", "Open"]: res = engine.execute_loot("char_01", context_menu["target_id"])
+                                            elif sel == "Attack": res = engine.execute_attack("char_01", context_menu["target_id"])
+                                            elif sel == "Examine": res = engine.execute_examine("char_01", context_menu["target_id"])
+                                            elif sel == "Move Here": res = "Moved." ; attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
+                                            elif sel == "Examine Area": res = engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
+                                            elif sel == "Examine Self": res = engine.execute_examine("char_01", "char_01")
+                                            elif sel.startswith("["): res = engine.execute_stat_action("char_01", context_menu["target_id"], sel)
+                                            status_text = f"System: {res}"; map_data = load_map_data()
+                                            if sel not in ["Move Here", "Cancel", "Loot", "Open"] and not sel.startswith("[") and "No" not in res: threading.Thread(target=trigger_narration, daemon=True).start()
                             context_menu["active"] = False; continue
                         elif my < WINDOW_HEIGHT - UI_HEIGHT:
                             if clicked_entity and "hostile" in clicked_entity.get("tags", []) and "dead" not in clicked_entity.get("tags", []):
                                 status_text = "System: Attacking..."; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
                                 res = engine.execute_attack("char_01", clicked_entity.get("id", clicked_entity["name"]))
-                                map_data = load_map_data()
-                                # ONLY NARRATE IF ACTION SUCCEEDED
-                                if "No stamina beats" not in res and "Not enough stamina" not in res:
+                                status_text = f"Combat: {res}"; map_data = load_map_data()
+                                if "No" not in res and "exhausted" not in res:
                                     threading.Thread(target=trigger_narration, daemon=True).start()
                             elif not clicked_entity: attempt_move(gx, gy, map_data); map_data = load_map_data()
                     elif event.button == 3:

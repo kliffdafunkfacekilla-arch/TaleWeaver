@@ -1,9 +1,9 @@
 {
   "weapons": {
-    "Heavy Boarding Hook": { "type": "weapon", "tags": ["kinetic-momentum", "flanking", "brutal"], "damage_die": "1d8", "stamina_cost": 2, "weight": 4 }
+    "Heavy Boarding Hook": { "type": "weapon", "tags": ["kinetic-momentum", "flanking", "brutal"], "damage_die": "1d8", "stamina_cost": 2, "weight": 3 }
   },
   "armor": {
-    "Leather River-Coat": { "type": "armor", "stamina_tax": 2, "aegis_bonus": 2, "weight": 2 }
+    "Leather River-Coat": { "type": "armor", "stamina_tax": 2, "aegis_bonus": 2, "weight": 1 }
   },
   "accessories": {
     "Aether-Compass": { "type": "accessory", "focus_tax": 1, "awareness_bonus": 1, "weight": 1 }

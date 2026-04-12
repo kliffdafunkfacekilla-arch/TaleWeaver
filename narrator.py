@@ -1,15 +1,26 @@
 import urllib.request
 import json
+import time
+import os
 
 def generate_flavor_text():
-    """Reads the JSON state and asks Ollama to narrate it, with strict memory limits."""
+    """Reads the JSON state with a retry loop and asks Ollama to narrate it."""
     
-    # 1. Read the current game state
-    try:
-        with open("local_map_state.json", "r") as f:
-            state = json.load(f)
-    except Exception as e:
-        return f"System Error: Could not read map data. ({e})"
+    # 1. Read the current game state with Windows-safe retries
+    state = None
+    for _ in range(5):
+        try:
+            with open("local_map_state.json", "r") as f:
+                state = json.load(f)
+                break
+        except (PermissionError, json.JSONDecodeError):
+            time.sleep(0.01)
+            continue
+        except Exception:
+            break
+
+    if not state:
+        return "The Director is lost in thought (State Load Failed)."
 
     # 2. Build the Prompt for the AI
     action = state.get("latest_action", {})
@@ -44,11 +55,11 @@ def generate_flavor_text():
 
     try:
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=5) as response:
             result = json.loads(response.read().decode("utf-8"))
             return result.get("response", "The Director is silent.")
     except Exception as e:
-        return f"AI Connection Failed. Ensure Ollama is running. ({e})"
+        return f"AI Connection Failed (Ollama). ({e})"
 
 if __name__ == "__main__":
     # Test it directly!

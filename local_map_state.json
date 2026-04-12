@@ -15,29 +15,29 @@
       "freezing",
       "snowy",
       "barren",
-      "clear_cold"
+      "blizzard"
     ],
-    "clock": 6,
+    "clock": 5,
     "in_combat": true
   },
-  "environment": "You are in Frostpeak Tundra. The weather is clear_cold.",
+  "environment": "You are in Frostpeak Tundra. The weather is blizzard.",
   "entities": [
     {
       "id": "char_01",
       "name": "Captain Jax",
       "type": "player",
       "pos": [
-        24,
-        24
+        29,
+        30
       ],
-      "hp": 11,
+      "hp": 15,
       "max_hp": 20,
       "composure": 15,
       "max_composure": 15,
       "resources": {
-        "stamina": 0,
+        "stamina": 5,
         "max_stamina": 10,
-        "focus": 4,
+        "focus": 6,
         "max_focus": 10,
         "beats": {
           "move": 1,
@@ -81,105 +81,16 @@
     {
       "name": "Wildling Scout",
       "type": "hostile",
-      "hp": 15,
+      "hp": 3,
       "tags": [
         "human",
         "hostile",
         "flesh"
       ],
-      "id": "ent_1140",
-      "pos": [
-        30,
-        17
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_4669",
-      "pos": [
-        28,
-        13
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_6165",
-      "pos": [
-        31,
-        13
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_7613",
-      "pos": [
-        24,
-        23
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_5682",
+      "id": "ent_5515",
       "pos": [
         29,
-        20
+        31
       ],
       "resources": {
         "beats": {
@@ -188,381 +99,6 @@
           "focus": 1
         }
       }
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 0,
-      "tags": [
-        "beast",
-        "flesh",
-        "cold",
-        "dead"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_4375",
-      "pos": [
-        25,
-        26
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_8751",
-      "pos": [
-        24,
-        26
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6863",
-      "pos": [
-        28,
-        20
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 5,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_2730",
-      "pos": [
-        24,
-        25
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_1593",
-      "pos": [
-        28,
-        21
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_3747",
-      "pos": [
-        27,
-        26
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_5333",
-      "pos": [
-        39,
-        16
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "id": "ent_1509",
-      "pos": [
-        41,
-        16
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6406",
-      "pos": [
-        36,
-        11
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_7737",
-      "pos": [
-        44,
-        24
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2469",
-      "pos": [
-        46,
-        19
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_9430",
-      "pos": [
-        40,
-        22
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6394",
-      "pos": [
-        41,
-        23
-      ]
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_8336",
-      "pos": [
-        46,
-        24
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_9505",
-      "pos": [
-        33,
-        32
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 15,
-      "tags": [
-        "human",
-        "hostile",
-        "flesh"
-      ],
-      "id": "ent_4913",
-      "pos": [
-        32,
-        32
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Ice Spider",
-      "type": "hostile",
-      "hp": 10,
-      "tags": [
-        "beast",
-        "hostile",
-        "cold",
-        "venomous"
-      ],
-      "inventory": [
-        "Venom Gland"
-      ],
-      "id": "ent_6301",
-      "pos": [
-        34,
-        27
-      ],
-      "resources": {
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      }
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6591",
-      "pos": [
-        34,
-        33
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2882",
-      "pos": [
-        34,
-        30
-      ]
     }
-  ],
-  "latest_action": {
-    "actor": "Captain Jax",
-    "action": "Movement",
-    "target": "[24, 24]",
-    "mechanical_result": "Moved. Ice Spider rolled 15, but Jax avoided the strike! Wildling Scout rolled 8 vs Jax's 5! Hit for 2 dmg! Ice Spider rolled 5, but Jax avoided the strike! Wildling Scout rolled 1, but Jax avoided the strike! Ice Spider rolled 17 vs Jax's 11! Hit for 4 dmg! Wildling Scout rolled 13, but Jax avoided the strike! Ice Spider rolled 5 vs Jax's 4! Hit for 3 dmg! Wildling Scout rolled 6, but Jax avoided the strike!"
-  },
-  "ai_directive": "NARRATOR MODE: Describe this visceral combat action in 2 sentences. NO sci-fi terms."
+  ]
 }

@@ -7,6 +7,13 @@ def load_items():
         with open("data/items.json", "r", encoding="utf-8") as f: return json.load(f)
     except: return {"weapons":{}, "armor":{}, "accessories":{}}
 
+def get_item_weight(item_name):
+    items = load_items()
+    for cat in ["weapons", "armor", "accessories"]:
+        if item_name in items.get(cat, {}):
+            return items[cat][item_name].get("weight", 0)
+    return 0
+
 def loot_all(looter, target):
     if "inventory" not in target or not target["inventory"]: return False
     if "inventory" not in looter: looter["inventory"] = []
@@ -105,6 +112,45 @@ def spend_stamina(entity, amount):
         return True
     return False
 
+def refresh_beats(entity):
+    """Resets the B.R.U.T.A.L. 3-Beat Pulse (1 Move, 1 Stamina, 1 Focus)."""
+    if "resources" not in entity: entity["resources"] = {}
+    entity["resources"]["beats"] = {"move": 1, "stamina": 1, "focus": 1}
+
+def consume_beat(entity, beat_type):
+    """Attempts to consume a specific beat. Returns True if successful."""
+    res = entity.get("resources", {})
+    beats = res.get("beats", {})
+    if beats.get(beat_type, 0) > 0:
+        beats[beat_type] -= 1
+        return True
+    return False
+
+def get_best_clash_tactic(entity):
+    """Maps the entity's highest stat to a Clash Matrix tactic."""
+    stats = entity.get("stats", {})
+    if not stats: return "Press" # Fallback
+    
+    tactic_map = {
+        "Might": "Press", "Knowledge": "Press",
+        "Endurance": "Hold", "Logic": "Hold",
+        "Finesse": "Trick", "Awareness": "Trick",
+        "Reflexes": "Maneuver", "Intuition": "Maneuver",
+        "Vitality": "Disengage", "Charm": "Disengage",
+        "Fortitude": "Feint", "Willpower": "Feint"
+    }
+    
+    best_stat = "Might"
+    best_val = -1
+    
+    for stat_name in tactic_map.keys():
+        val = get_stat(entity, stat_name)
+        if val > best_val:
+            best_val = val
+            best_stat = stat_name
+            
+    return tactic_map.get(best_stat, "Press")
+
 def apply_damage(entity, amount, damage_type="physical"):
     if damage_type == "physical" and "hp" in entity:
         entity["hp"] -= amount
@@ -114,6 +160,48 @@ def apply_damage(entity, amount, damage_type="physical"):
             if "dead" not in entity.get("tags", []): entity["tags"].append("dead")
             return True
     return False
+
+def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
+    """
+    Rolls 1d20 + Stat + Gear. 
+    Automatically evaluates Status Tags for Advantage/Disadvantage.
+    """
+    tags = entity.get("tags", [])
+    
+    # 1. Evaluate Entity State
+    has_adv = situational_adv
+    has_dis = situational_dis
+    
+    # Status Effects causing Disadvantage
+    if "staggered" in tags or "prone" in tags or "terrified" in tags:
+        has_dis = True
+        
+    # Status Effects causing Advantage (e.g., specific buffs, high ground if you add it to tags)
+    if "focused" in tags:
+        has_adv = True
+
+    # 2. The Golden Rule: Adv and Dis cancel each other out
+    if has_adv and has_dis:
+        has_adv = False
+        has_dis = False
+
+    # 3. Roll the Dice
+    roll_1 = random.randint(1, 20)
+    roll_2 = random.randint(1, 20)
+    
+    if has_adv:
+        base_roll = max(roll_1, roll_2)
+        roll_log = f"[Advantage: Rolled {roll_1} & {roll_2} -> Kept {base_roll}]"
+    elif has_dis:
+        base_roll = min(roll_1, roll_2)
+        roll_log = f"[Disadvantage: Rolled {roll_1} & {roll_2} -> Kept {base_roll}]"
+    else:
+        base_roll = roll_1
+        roll_log = f"[Rolled {base_roll}]"
+
+    # 4. Add Stats
+    total = base_roll + get_stat(entity, stat_name)
+    return total, roll_log
 
 def process_npc_turn(npc, player, map_data):
     if "dead" in npc.get("tags", []) or "player" in npc.get("tags", []): return None

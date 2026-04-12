@@ -69,12 +69,12 @@ def check_encounter_end(state, player):
         print("\n[System] Threat eliminated. Returning to Explore Mode.")
         return True
         
-    # Distance Exit: If all hostiles are > 10 tiles away, drop combat
+    # Distance Exit: If all hostiles are > 12 tiles away, drop combat (Buffed from 10)
     px, py = player["pos"]
     all_far = True
     for h in hostiles:
         hx, hy = h["pos"]
-        if max(abs(px - hx), abs(py - hy)) <= 10:
+        if max(abs(px - hx), abs(py - hy)) <= 12:
             all_far = False; break
             
     if all_far:
@@ -143,11 +143,11 @@ def end_player_turn():
     capacity = player.get("stats", {}).get("Endurance", 10) 
     loadout_percent = (total_weight / capacity) * 100 if capacity > 0 else 100
     
-    # Determine Regen Rate
-    if loadout_percent <= 50: regen_amount = 2
-    elif loadout_percent <= 75: regen_amount = 1
-    elif loadout_percent <= 100: regen_amount = 1 # You always recoup something if at parity
-    else: regen_amount = 0 # No recovery if over-encumbered, but no longer -1!
+    # Determine Regen Rate (BUFFED v2)
+    if loadout_percent <= 50: regen_amount = 3
+    elif loadout_percent <= 75: regen_amount = 2
+    elif loadout_percent <= 100: regen_amount = 2
+    else: regen_amount = 1 
     
     # Wipe temporary combat tags
     for e in state.get("entities", []):

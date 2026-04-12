@@ -29,7 +29,8 @@ COLORS = {
     "cold": (180, 220, 240), "stone": (90, 90, 90),
     "text": (220, 220, 220), "ui_bg": (15, 15, 20),
     "menu_bg": (40, 40, 50), "menu_hover": (70, 70, 90), "menu_border": (150, 150, 150),
-    "title": (255, 215, 0)
+    "title": (255, 215, 0), "stamina": (100, 255, 100), "focus": (200, 100, 255),
+    "warning": (255, 200, 0), "danger": (255, 50, 50)
 }
 
 font = pygame.font.SysFont("consolas", 16)
@@ -129,7 +130,7 @@ def draw_context_menu():
     pygame.draw.line(screen, COLORS["menu_border"], (context_menu["x"], context_menu["y"] + head_h), (context_menu["x"] + menu_width, context_menu["y"] + head_h))
     mx, my = pygame.mouse.get_pos()
     for i, option in enumerate(context_menu["options"]):
-        opt_rect = pygame.Rect(context_menu["x"], context_menu["y"] + head_h + (i * opt_h), menu_width, opt_h)
+        opt_rect = pygame.Rect(context_menu["x"], context_menu["y"] + head_h + (i * opt_h), menu_width, oh)
         if opt_rect.collidepoint(mx, my): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
         screen.blit(font.render(option, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
 
@@ -177,35 +178,48 @@ def draw_tactical_screen(map_data, cam_x, cam_y):
     pygame.draw.line(screen, (100, 100, 100), (0, WINDOW_HEIGHT - UI_HEIGHT), (WINDOW_WIDTH, WINDOW_HEIGHT - UI_HEIGHT), 2)
     draw_text_wrapped(screen, status_text, COLORS["text"], pygame.Rect(15, WINDOW_HEIGHT - UI_HEIGHT + 15, WINDOW_WIDTH - 30, UI_HEIGHT - 30), font)
     
-    # MODE INDICATOR
-    is_combat = map_data.get("meta", {}).get("in_combat", False)
-    global_pos = map_data.get("meta", {}).get("global_pos", [0,0])
+    # 1. FETCH PLAYER DATA
     player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
+    if not player: return
     
-    beats = player.get("resources", {}).get("beats", {}) if player else {}
+    # 2. RESOURCE POOLS (Vitals HUD)
+    hp, mhp = player.get("hp", 0), player.get("max_hp", 20)
+    st, mst = player.get("resources", {}).get("stamina", 0), player.get("resources", {}).get("max_stamina", 10)
+    fo, mfo = player.get("resources", {}).get("focus", 0), player.get("resources", {}).get("max_focus", 10)
+    
+    s_color = COLORS["stamina"]
+    if st <= 0: s_color = COLORS["danger"]
+    elif st <= 3: s_color = COLORS["warning"]
+    
+    vitals_x = WINDOW_WIDTH - 420
+    screen.blit(font.render(f"JAX:", True, COLORS["title"]), (vitals_x, 15))
+    screen.blit(font.render(f"HP: {hp}/{mhp}", True, COLORS["text"]), (vitals_x + 50, 15))
+    screen.blit(font.render(f"STAMINA: {st}/{mst}", True, s_color), (vitals_x + 140, 15))
+    screen.blit(font.render(f"FOCUS: {fo}/{mfo}", True, COLORS["focus"]), (vitals_x + 280, 15))
+
+    # 3. MODE INDICATOR
+    is_combat = map_data.get("meta", {}).get("in_combat", False)
+    beats = player.get("resources", {}).get("beats", {})
     s_beat = beats.get("stamina", 0)
     
     if is_combat:
-        if s_beat > 0:
-            mode_color = COLORS["hostile"]
-            mode_text = "🚨 ENCOUNTER MODE 🚨"
-        else:
-            mode_color = (130, 130, 130) # Dimmed
-            mode_text = "🛑 ROUND ENDED (Press SPACE) 🛑"
+        mode_color = COLORS["hostile"] if s_beat > 0 else (130, 130, 130)
+        mode_text = "🚨 ENCOUNTER MODE 🚨" if s_beat > 0 else "🛑 ROUND ENDED (Press SPACE) 🛑"
     else:
         mode_color = COLORS["npc"]
         mode_text = "👁️ EXPLORE MODE (Free)"
         
-    screen.blit(title_font.render(mode_text, True, mode_color), (WINDOW_WIDTH - 420, 10))
+    screen.blit(title_font.render(mode_text, True, mode_color), (vitals_x, 40))
     
-    # RIGID PULSE HUD (Only show in combat)
+    # 4. PULSE HUD (Beats)
     if is_combat:
         m, s, f = beats.get("move", 0), beats.get("stamina", 0), beats.get("focus", 0)
-        tactic = entities.get_best_clash_tactic(player) if player else "N/A"
-        beat_str = f"PULSE: M:[{m}] S:[{s}] F:[{f}] | Tactic: {tactic}"
-        screen.blit(font.render(beat_str, True, COLORS["title"]), (WINDOW_WIDTH - 350, 40))
+        tactic = entities.get_best_clash_tactic(player)
+        beat_str = f"PULSE: Move:[{m}] Stamina:[{s}] Focus:[{f}] | Clash: {tactic}"
+        screen.blit(font.render(beat_str, True, COLORS["title"]), (vitals_x, 80))
     else:
-        screen.blit(font.render(f"World: {global_pos} | Clock: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (WINDOW_WIDTH - 350, 40))
+        global_pos = map_data.get("meta", {}).get("global_pos", [0,0])
+        screen.blit(font.render(f"World: {global_pos} | Clock: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (vitals_x, 80))
 
 def draw_transition_prompt():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT)); overlay.set_alpha(150); overlay.fill((0, 0, 0)); screen.blit(overlay, (0, 0))
@@ -227,7 +241,7 @@ def attempt_move(grid_x, grid_y, map_data):
         app_state = "TRANSITION_PROMPT"; transition_target = [grid_x, grid_y]; status_text = "System: Awaiting confirmation..."
     else:
         res = engine.execute_move("char_01", grid_x, grid_y)
-        status_text = f"System: {res}" # Catch beats/exhaustion failures
+        status_text = f"System: {res}"
 
 def trigger_narration():
     global status_text; status_text = "Director: [Thinking...]"; new_text = narrator.generate_flavor_text(); status_text = f"Director: {new_text}"
@@ -272,7 +286,6 @@ def main():
                                 item = zone["item"]; options = ["Equip" if item in actions.get_valid_actions(None, None) else "Use", "Drop"]; ui_manager.UI_STATE["context_menu"] = {"active": True, "x": event.pos[0], "y": event.pos[1], "item": item, "options": options}
             pygame.display.flip()
         elif app_state == "PLAYING":
-            # Check for Death State
             player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
             if player and player.get("hp", 0) <= 0:
                 print("\n[DEAD] CAPTAIN JAX HAS DIED. THE DRIFT CLAIMS ANOTHER. [DEAD]")
@@ -298,7 +311,6 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mx, my = event.pos; gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
                     ents = [e for e in map_data.get("entities", []) if e["pos"] == [gx, gy]]; clicked_entity = None
-                    # PRIORITIZE LIVING HOSTILES
                     clicked_entity = next((e for e in ents if e.get("type") == "hostile" and "dead" not in e.get("tags", [])), None)
                     if not clicked_entity: clicked_entity = next((e for e in ents if e.get("type") == "npc" and "dead" not in e.get("tags", [])), None)
                     if not clicked_entity: clicked_entity = next((e for e in ents if e.get("type") == "player"), None)
@@ -321,7 +333,7 @@ def main():
                                             if sel in ["Loot", "Open"]: res = engine.execute_loot("char_01", context_menu["target_id"])
                                             elif sel == "Attack": res = engine.execute_attack("char_01", context_menu["target_id"])
                                             elif sel == "Examine": res = engine.execute_examine("char_01", context_menu["target_id"])
-                                            elif sel == "Move Here": res = "Moved." ; attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
+                                            elif sel == "Move Here": res = "Moved."; attempt_move(context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
                                             elif sel == "Examine Area": res = engine.execute_examine_area("char_01", context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Self": res = engine.execute_examine("char_01", "char_01")
                                             elif sel.startswith("["): res = engine.execute_stat_action("char_01", context_menu["target_id"], sel)

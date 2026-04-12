@@ -95,7 +95,7 @@ ACTION_REGISTRY = {
     "Open": {"stats": [], "targets": ["prop"], "tags": ["container"], "cost": {"type": "stamina", "val": 0}, "category": "General", "desc": "Interact with a container."}
 }
 
-def get_valid_actions(player, target_entity):
+def get_valid_actions(player, target_entity, learned_skills=None):
     """Returns a list of action names valid for the given target."""
     valid = []
     if not target_entity:
@@ -104,30 +104,40 @@ def get_valid_actions(player, target_entity):
     target_type = target_entity.get("type", "prop")
     target_tags = target_entity.get("tags", [])
     
+    # Check Static Actions
     for action_name, data in ACTION_REGISTRY.items():
-        # Check type match
         type_match = target_type in data["targets"]
-        # Check tag match (if specified)
         tag_match = True
         if data["tags"]:
             tag_match = any(tag in target_tags for tag in data["tags"])
             
         if type_match and tag_match:
             valid.append(action_name)
+
+    # Check Learned Skills
+    if learned_skills:
+        for skill_name in learned_skills:
+            # We assume skills are valid for hostiles/NPCs by default
+            # More granular filtering happens in the engine/resolver
+            if target_type in ["hostile", "npc", "prop"]:
+                valid.append(skill_name)
             
     return valid
 
 def get_best_stat_for_action(player, action_name):
     """Determines which stat the player is best at for a specific action."""
     data = ACTION_REGISTRY.get(action_name)
-    if not data or not data["stats"]: return None
-    
     stats = player.get("stats", {})
+    
+    if not data or not data.get("stats"): 
+        # FALLBACK: If it's a learned skill, it's not in ACTION_REGISTRY.
+        # The caller (main_game.py) should handle skill stat lookup separately.
+        return None
+    
     best_stat = data["stats"][0]
     best_val = -float('inf')
     
     for stat in data["stats"]:
-        # Handle "Reflexes" (Design Bible) vs "Reflex" (Action List)
         lookup_stat = "Reflexes" if stat == "Reflex" else stat
         val = stats.get(lookup_stat, 0)
         if val > best_val:

@@ -98,54 +98,56 @@ def draw_entities(map_data, cam_x, cam_y):
             pygame.draw.rect(screen, color, (pixel_x + 2, pixel_y + 2, CELL_SIZE - 4, CELL_SIZE - 4))
             if ent_type != "terrain" and "dead" not in tags:
                 initial = "@" if ent_type == "player" else entity["name"][0].upper()
-                text_surf = icon_font.render(initial, True, (240, 240, 240))
-                shadow_surf = icon_font.render(initial, True, (20, 20, 20))
-                text_rect = text_surf.get_rect(center=(pixel_x + CELL_SIZE//2, pixel_y + CELL_SIZE//2))
-                screen.blit(shadow_surf, (text_rect.x + 1, text_rect.y + 1))
-                screen.blit(text_surf, text_rect)
+                text_surf = icon_font.render(initial, True, (255, 255, 255))
+                screen.blit(text_surf, text_surf.get_rect(center=(pixel_x + CELL_SIZE // 2, pixel_y + CELL_SIZE // 2)))
 
-def draw_text_wrapped(surface, text, color, rect, font, line_spacing=4):
+def draw_text_wrapped(screen, text, color, rect, font):
     words = text.split(' ')
-    lines, current_line = [], []
+    space = font.size(' ')[0]
+    max_width = rect.width
+    x, y = rect.x, rect.y
     for word in words:
-        if font.size(' '.join(current_line + [word]))[0] <= rect.width: current_line.append(word)
-        else:
-            lines.append(' '.join(current_line))
-            current_line = [word]
-    lines.append(' '.join(current_line))
-    y = rect.y
-    for line in lines:
-        surface.blit(font.render(line, True, color), (rect.x, y))
-        y += font.size(line)[1] + line_spacing
+        word_surf = font.render(word, True, color)
+        word_width, word_height = word_surf.get_size()
+        if x + word_width >= rect.x + max_width:
+            x = rect.x; y += word_height
+        screen.blit(word_surf, (x, y))
+        x += word_width + space
 
 def draw_context_menu():
     if not context_menu["active"]: return
-    menu_width, opt_h, head_h = 180, 30, 30
-    menu_rect = pygame.Rect(context_menu["x"], context_menu["y"], menu_width, (len(context_menu["options"]) * opt_h) + head_h)
-    pygame.draw.rect(screen, COLORS["menu_bg"], menu_rect)
-    pygame.draw.rect(screen, COLORS["menu_border"], menu_rect, 2)
-    target_name = context_menu.get("target_name") or "Terrain"
-    if len(target_name) > 18: target_name = target_name[:15] + "..."
-    screen.blit(font.render(target_name, True, COLORS["title"]), (context_menu["x"] + 10, context_menu["y"] + 5))
-    pygame.draw.line(screen, COLORS["menu_border"], (context_menu["x"], context_menu["y"] + head_h), (context_menu["x"] + menu_width, context_menu["y"] + head_h))
-    mx, my = pygame.mouse.get_pos()
-    for i, option in enumerate(context_menu["options"]):
-        opt_rect = pygame.Rect(context_menu["x"], context_menu["y"] + head_h + (i * opt_h), menu_width, opt_h)
+    mx, my = pygame.mouse.get_pos(); mw, oh, hh = 180, 30, 30; opts = context_menu["options"]
+    mr = pygame.Rect(context_menu["x"], context_menu["y"], mw, (len(opts) * oh) + hh)
+    pygame.draw.rect(screen, COLORS["menu_bg"], mr); pygame.draw.rect(screen, COLORS["menu_border"], mr, 2)
+    title = context_menu["target_name"] if context_menu["target_name"] else "Location"
+    screen.blit(font.render(title, True, COLORS["title"]), (mr.x + 10, mr.y + 5))
+    pygame.draw.line(screen, COLORS["menu_border"], (mr.x, mr.y + hh), (mr.right, mr.y + hh), 1)
+    for i, opt in enumerate(opts):
+        opt_rect = pygame.Rect(mr.x, mr.y + hh + (i * oh), mw, oh)
         if opt_rect.collidepoint(mx, my): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
-        screen.blit(font.render(option, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
+        screen.blit(font.render(opt, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
 
-def generate_menu_options(entity, player, page="main"):
-    if not entity: return ["Move Here", "Examine Area", "Cancel"]
-    tags = entity.get("tags", []); ent_type = entity.get("type", "prop")
-    valid_actions = actions.get_valid_actions(player, entity)
+def generate_menu_options(target, player, page="main"):
+    if not player: return ["Cancel"]
+    learned_skills = player.get("skills", [])
+    valid_actions = actions.get_valid_actions(player, target, learned_skills=learned_skills)
     options = []
     if page == "main":
-        if "player" in tags: options.append("Examine Self")
-        if "container" in tags: options.append("Open")
-        if "dead" in tags: options.append("Loot")
-        if ent_type == "hostile" and "dead" not in tags: options.append("Attack")
+        if not target: options.append("Move Here"); options.append("Examine Area")
+        elif target == player: options.append("Examine Self")
+        else:
+            if "hostile" in target.get("tags", []) and "dead" not in target.get("tags", []): options.append("Attack")
+            if "item" in target.get("tags", []) or "dead" in target.get("tags", []): options.append("Loot")
+            if "container" in target.get("tags", []): options.append("Open")
+        
+        # Priority: Learned Skills (Tactics/Anomalies)
+        for skill in learned_skills:
+            if skill in valid_actions:
+                options.append(skill)
+
         stat_actions = []
         for act in valid_actions:
+            if act in learned_skills: continue # Already added
             best_stat = entities.get_best_stat_for_action(player, act)
             if best_stat: stat_actions.append((act, best_stat, entities.get_stat(player, best_stat)))
         stat_actions.sort(key=lambda x: x[2], reverse=True)
@@ -280,7 +282,20 @@ def main():
             player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
             if player and player.get("hp", 0) <= 0: app_state = "GAME_OVER"; continue
             p_id = player.get("id", player.get("name")) if player else None
-            draw_tactical_screen(map_data, cam_x, cam_y); cam_x, cam_y = get_camera_offset(map_data)
+            
+            draw_tactical_screen(map_data, cam_x, cam_y)
+            cam_x, cam_y = get_camera_offset(map_data)
+            
+            # --- NEW: TOOLTIP INJECTION ---
+            mx, my = pygame.mouse.get_pos()
+            # Only draw tooltip if the mouse is on the map and the menu isn't open
+            if my < WINDOW_HEIGHT - UI_HEIGHT and not context_menu["active"]:
+                gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
+                hovered = next((e for e in map_data.get("entities", []) if e.get("pos") == [gx, gy]), None)
+                if hovered:
+                    ui_manager.draw_hover_tooltip(screen, hovered, (mx, my), font, COLORS)
+            # ------------------------------
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 elif event.type == pygame.KEYDOWN:
@@ -310,7 +325,7 @@ def main():
                                     if idx < len(context_menu["options"]):
                                         sel = context_menu["options"][idx]
                                         if sel == "More Actions...": context_menu["page"] = "more"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "more"); continue
-                                        elif sel == "Back": context_menu["page"] = "main"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "main"); continue
+                                        elif sel == "Back": context_menu["page"] = "more"; target = next((e for e in map_data["entities"] if e.get("id") == context_menu["target_id"]), None); context_menu["options"] = generate_menu_options(target, player, "main"); continue
                                         if sel != "Cancel":
                                             status_text = f"System: {sel}..."; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
                                             t_id = context_menu["target_id"]
@@ -321,8 +336,12 @@ def main():
                                             elif sel == "Examine Area": res = engine.execute_examine_area(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Self": res = engine.execute_examine(p_id, p_id)
                                             elif sel.startswith("["): res = engine.execute_stat_action(p_id, t_id, sel)
+                                            # Learned Skills Handler
+                                            elif sel in player.get("skills", []): res = engine.execute_skill_action(p_id, t_id, sel)
+                                            else: res = "Unknown command."
+                                            
                                             status_text = f"System: {res}"; map_data = load_map_data()
-                                            if "No" not in res and "exhausted" not in res: threading.Thread(target=trigger_narration, daemon=True).start()
+                                            if "No" not in res and "exhausted" not in res and "failed" not in res: threading.Thread(target=trigger_narration, daemon=True).start()
                             context_menu["active"] = False; continue
                         elif my < WINDOW_HEIGHT - UI_HEIGHT:
                             if clicked_entity and "hostile" in clicked_entity.get("tags", []) and "dead" not in clicked_entity.get("tags", []):

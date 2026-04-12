@@ -274,22 +274,12 @@ def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
     total = base_roll + get_stat(entity, stat_name)
     return total, roll_log
 
-def process_npc_turn(npc, player, map_data):
-    if "dead" in npc.get("tags", []) or "player" in npc.get("tags", []): return None
-    if "hostile" in npc.get("tags", []):
-        dx, dy = player["pos"][0] - npc["pos"][0], player["pos"][1] - npc["pos"][1]
-        distance = max(abs(dx), abs(dy)) 
-        
-        # NPCs use weapon rules too
-        w_stats = get_weapon_stats(npc)
-        if distance <= w_stats["range"]: return {"action": "attack", "target": player["id"]}
-        elif distance < 8:
-            move_x = 1 if dx > 0 else (-1 if dx < 0 else 0)
-            move_y = 1 if dy > 0 else (-1 if dy < 0 else 0)
-            new_pos = [npc["pos"][0] + move_x, npc["pos"][1] + move_y]
-            collision = any(e["pos"] == new_pos and ("solid" in e.get("tags", []) or e.get("hp", 0) > 0) for e in map_data.get("entities", []))
-            if new_pos == player["pos"]: collision = True
-            if not collision:
-                npc["pos"] = new_pos
-                return {"action": "move", "target": new_pos}
-    return None
+def regenerate_resources(entity):
+    """At end of turn, restore basic Stamina and Focus tokens."""
+    res = entity.setdefault("resources", {})
+    max_s = res.get("max_stamina", 10)
+    max_f = res.get("max_focus", 10)
+    
+    # NPCs get a flat +2 regen to stay active
+    res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
+    res["focus"] = min(max_f, res.get("focus", 0) + 2)

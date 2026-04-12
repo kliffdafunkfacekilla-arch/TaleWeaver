@@ -83,29 +83,89 @@ def execute_world_turn(state):
     if "clock" not in state["meta"]: state["meta"]["clock"] = 0
     state["meta"]["clock"] += 1
         
-    npc_actions = []
+    npc_logs = []
+    # PROCESS AI PULSE
     for npc in state.get("entities", []):
-        if npc.get("type") == "hostile" and npc.get("hp", 0) > 0:
-            entities.refresh_beats(npc)
-            action = entities.process_npc_turn(npc, player, state)
-            if action:
-                if action["action"] == "attack":
-                    npc_might = entities.get_stat(npc, "Might")
-                    attack_roll, att_log = entities.roll_check(npc, "Might")
-                    def_stat = "Aegis" if entities.get_stat(player, "Aegis") > 0 else "Reflexes"
-                    defense_roll, def_log = entities.roll_check(player, def_stat)
-                    
-                    if attack_roll > defense_roll:
-                        damage = max(1, random.randint(1, 4) + npc_might)
-                        entities.apply_damage(player, damage, "physical")
-                        log_msg = f"{npc['name']} rolled {attack_roll} vs Jax's {defense_roll}! Hit for {damage} dmg!"
-                    else:
-                        log_msg = f"{npc['name']} rolled {attack_roll}, but Jax avoided the strike!"
-                    npc_actions.append(log_msg)
+        if (npc.get("type") == "hostile" or "hostile" in npc.get("tags", [])) and npc.get("hp", 0) > 0:
+            res = execute_npc_pulse(state, npc, player)
+            if res: npc_logs.append(res)
                 
-    if npc_actions:
-        res = state.get("latest_action", {}).get("mechanical_result", "")
-        state.setdefault("latest_action", {})["mechanical_result"] = res + " " + " ".join(npc_actions)
+    if npc_logs:
+        prev = state.get("latest_action", {}).get("mechanical_result", "")
+        state.setdefault("latest_action", {})["mechanical_result"] = prev + " " + " ".join(npc_logs)
+
+def execute_npc_pulse(state, npc, player):
+    """
+    NPC Brain 2.0: Strategic pulse management.
+    1. Refresh Beats (3 per pulse).
+    2. Skill Primary Check (Range & Resources).
+    3. Fallback Movement.
+    4. Fallback Basic Attack.
+    5. Regeneration.
+    """
+    entities.refresh_beats(npc)
+    npc_id = npc.get("id", npc["name"])
+    player_id = player.get("id", player["name"])
+    
+    px, py = player["pos"]
+    nx, ny = npc["pos"]
+    dx, dy = px - nx, py - ny
+    dist = max(abs(dx), abs(dy))
+    
+    skills_db = entities.load_skills()
+    
+    # --- 1. EVALUATE SKILLS ---
+    for skill_name in npc.get("skills", []):
+        # Lookup categorization (Body vs Mind)
+        skill_data = None
+        skill_type = "stamina"
+        for stat, data in skills_db.get("tactics", {}).items():
+            for tier, t_data in data.get("tiers", {}).items():
+                if t_data.get("name") == skill_name:
+                    skill_data = t_data; skill_type = "stamina"; break
+            if skill_data: break
+        if not skill_data:
+            for school, data in skills_db.get("anomalies", {}).items():
+                for tier, a_data in data.get("tiers", {}).items():
+                    if a_data.get("name") == skill_name:
+                        skill_data = a_data; skill_type = "focus"; break
+                if skill_data: break
+        
+        if not skill_data: continue
+        
+        # Range Check: S-Die = 1, F-Die = 5 (Inferred)
+        s_cost = skill_data.get("cost", {}).get("primary", skill_data.get("cost", {}).get("stamina", 0))
+        f_cost = skill_data.get("cost", {}).get("secondary", skill_data.get("cost", {}).get("focus", 0))
+        
+        needed_range = 1 if skill_type == "stamina" else 5
+        if dist <= needed_range:
+            # Resource Check
+            if npc["resources"].get("stamina", 0) >= s_cost and npc["resources"].get("focus", 0) >= f_cost:
+                # Beat Check
+                if entities.consume_beat(npc, skill_type):
+                    return execute_skill_action(npc_id, player_id, skill_name)
+
+    # --- 2. FALLBACK MOVEMENT ---
+    if dist > 1 and entities.consume_beat(npc, "move"):
+        step_x = 1 if dx > 0 else (-1 if dx < 0 else 0)
+        step_y = 1 if dy > 0 else (-1 if dy < 0 else 0)
+        dest = [nx + step_x, ny + step_y]
+        
+        # Multi-stage collision check
+        collision = any(e["pos"] == dest and (e.get("hp", 0) > 0 or "solid" in e.get("tags", [])) for e in state.get("entities", []))
+        if not collision:
+            npc["pos"] = dest
+            # If distance is still closed, try a basic attack next (if beat remains)
+            dist = max(abs(px - dest[0]), abs(py - dest[1]))
+
+    # --- 3. FALLBACK ATTACK ---
+    if dist <= entities.get_weapon_stats(npc)["range"]:
+        if entities.consume_beat(npc, "stamina"):
+            return execute_attack(npc_id, player_id)
+
+    # --- 4. END TURN REGEN ---
+    entities.regenerate_resources(npc)
+    return None
 
 def apply_status_tag(entity, new_tag):
     """
@@ -116,7 +176,7 @@ def apply_status_tag(entity, new_tag):
     tags = entity.setdefault("tags", [])
     
     # ELITE OVERRIDE PROTOCOL
-    cc_tags = ["staggered", "stunned", "confused", "terrified", "immobilized"]
+    cc_tags = ["staggered", "stunned", "confused", "terrified", "immobilized", "blinded", "broken_armor"]
     is_elite = "elite" in tags or "titan" in tags
 
     if is_elite and new_tag in cc_tags:
@@ -153,20 +213,14 @@ def end_player_turn():
     # Refresh Beats AFTER clearing statuses
     for e in state.get("entities", []):
         tags = e.setdefault("tags", [])
-        # 1. Aging Immunity: Tags ending in '_immune' signify a "cooldown" after a status.
-        # We clear statuses first, but keep immunity until the NEXT turn.
-        # Actually, let's simplify: status clears this turn, immunity clears next.
         
         # Clear temporary battle-state tags
         for t in ["has_defended", "disengaging", "staggered", "stunned", "prone"]:
             if t in tags: tags.remove(t)
             
         # Clear 'immune_' tags if they don't have the status anymore
-        # (This implements the "Immune for 1 round" rule)
         for t in list(tags):
             if t.startswith("immune_"):
-                # If the base status (e.g. 'stunned') is NOT in tags, this immunity is now active.
-                # It will clear at the end of THIS turn, meaning it protected them for exactly one pulse cycle.
                 tags.remove(t)
             
     entities.refresh_beats(player)
@@ -218,7 +272,6 @@ def execute_attack(actor_id, target_id):
     actor_name, target_name = actor["name"], target["name"]
     if "dead" in target.get("tags", []): return f"{target_name} is already finished."
     
-    # Get Dynamic Weapon Stats
     w_stats = entities.get_weapon_stats(actor)
     weapon_tags = w_stats.get("tags", [])
     
@@ -226,97 +279,59 @@ def execute_attack(actor_id, target_id):
     if not is_combat:
         state["meta"]["in_combat"] = True; entities.refresh_beats(actor) 
     else:
-        if not entities.consume_beat(actor, "stamina"): return "No stamina beats remaining! Press SPACE."
+        # Beats should have been consumed by execute_npc_pulse OR the player loop
+        # We don't double-consume here if we came from NPC pulse logic
+        pass
 
-    if not entities.spend_stamina(actor, w_stats["cost"]):
+    if actor["resources"].get("stamina", 0) < w_stats["cost"]:
         return f"{actor_name} is too exhausted (Stamina tokens required: {w_stats['cost']})!"
+    
+    # NPCs spending tokens
+    actor["resources"]["stamina"] -= w_stats["cost"]
         
     dx, dy = abs(actor["pos"][0] - target["pos"][0]), abs(actor["pos"][1] - target["pos"][1])
     if max(dx, dy) > w_stats["range"]:
-        mech_result = f"Target out of range for {w_stats['name']} (Range: {w_stats['range']})."
-        state["latest_action"] = {"actor": actor_name, "action": "Melee Attack", "target": target_name, "mechanical_result": mech_result}
-        save_state(state); return mech_result
+        return f"Target out of range."
 
     target_tags = target.get("tags", [])
-    
-    # --- DUALITY OF TAGS (Brittle / Brutal) ---
     if "brittle" in target_tags and "brutal" in weapon_tags:
         if target.get("type") == "prop" or "environment" in target_tags:
-            # OBJECT RULE: Instant shattering
             entities.apply_damage(target, 999, "physical")
-            mech_result = f"CRITICAL MASS! The Brittle {target_name} is instantly shattered by the Brutal impact!"
-            state["latest_action"] = {"actor": actor_name, "action": "Melee Attack", "target": target_name, "mechanical_result": mech_result}
+            mech_result = f"CRITICAL MASS! Brittle {target_name} shattered!"
+            state["latest_action"] = {"actor": actor_name, "action": "Attack", "target": target_name, "mechanical_result": mech_result}
             save_state(state); return mech_result
-        else:
-            # ENTITY RULE: Bonus damage
-            brittle_bonus = 2
-    else:
-        brittle_bonus = 0
+        else: brittle_bonus = 2
+    else: brittle_bonus = 0
 
-    attacker_adv = True if "prone" in target_tags or "stunned" in target_tags else False
-    target_stamina = target.get("resources", {}).get("stamina", 10)
-    
-    attack_total, att_log = entities.roll_check(actor, "Might", situational_adv=attacker_adv)
-    
-    if target_stamina <= 0:
-        defense_total = 0; def_log = "[Exhausted: No Defense!]"
-    elif "has_defended" in target.get("tags", []):
-        defense_total = 10 + entities.get_gear_bonus(target, "Aegis"); def_log = "[Overwhelmed: Static]"
-    else:
-        def_stat = "Aegis" if entities.get_stat(target, "Aegis") > 0 else "Reflexes"
-        defense_total, def_log = entities.roll_check(target, def_stat)
-        target.setdefault("tags", []).append("has_defended")
+    attack_total, att_log = entities.roll_check(actor, "Might")
+    def_stat = "Aegis" if entities.get_stat(target, "Aegis") > 0 else "Reflexes"
+    defense_total, def_log = entities.roll_check(target, def_stat)
         
     if attack_total == defense_total:
         mech_result = execute_clash(state, actor, target, entities.get_best_clash_tactic(actor), entities.get_best_clash_tactic(target))
     elif attack_total > defense_total: 
         actor_might = entities.get_stat(actor, "Might")
-        die_size = w_stats["die"]; flat_dmg = w_stats["flat"]
-        
-        if attack_total - defense_total >= 5:
-            damage = die_size + flat_dmg + actor_might + brittle_bonus; crit_prefix = "CRITICAL HIT! "
-        else:
-            damage = max(1, random.randint(1, die_size) + flat_dmg + actor_might + brittle_bonus); crit_prefix = "HIT. "
-            
+        damage = max(1, random.randint(1, w_stats["die"]) + w_stats["flat"] + actor_might + brittle_bonus)
         is_dead = entities.apply_damage(target, damage, "physical")
-        if is_dead: 
-            check_encounter_end(state, actor)
-            mech_result = f"{crit_prefix}{damage} damage. {target_name} is DEAD."
-        else: 
-            msg_mod = f" ( exploited Brittle state!)" if brittle_bonus > 0 else ""
-            mech_result = f"{crit_prefix}{damage} damage dealt{msg_mod}. {target_name} has {target['hp']} HP left."
+        mech_result = f"HIT! {damage} dmg. {target_name} has {target['hp']} HP." if not is_dead else f"KILL! {damage} dmg. {target_name} is DEAD."
     else: 
-        mech_result = f"BLOCKED! {target_name}'s defense held."
+        mech_result = f"MISS! {target_name} defended."
                 
-    state["latest_action"] = {"actor": actor_name, "action": "Melee Attack", "target": target_name, "mechanical_result": mech_result}
-    state["ai_directive"] = "NARRATOR MODE: Describe this visceral combat action in 2 sentences. NO sci-fi terms."
+    state["latest_action"] = {"actor": actor_name, "action": "Strike", "target": target_name, "mechanical_result": mech_result}
     save_state(state); return mech_result
 
 def execute_move(actor_id, dest_x, dest_y):
+    # This is primarily for PLAYERS. NPCs move via execute_npc_pulse logic now.
     state = load_state()
     actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
     if not actor or "dead" in actor.get("tags", []): return "Action failed."
     dx, dy = abs(actor["pos"][0] - dest_x), abs(actor["pos"][1] - dest_y)
-    max_dist = actor.get("speed", 5)
-    if max(dx, dy) > max_dist: return f"Move too far! ({max_dist} cell limit)"
-    is_combat = state.setdefault("meta", {}).get("in_combat", False)
-    if is_combat:
-        if not entities.consume_beat(actor, "move"): return "No Move Beats remaining! Press SPACE."
-        actor_tags = actor.get("tags", [])
-        if "disengaging" not in actor_tags:
-            for e in state.get("entities", []):
-                if e != actor and "hostile" in e.get("tags", []) and e.get("hp", 0) > 0:
-                    ex, ey = abs(actor["pos"][0] - e["pos"][0]), abs(actor["pos"][1] - e["pos"][1])
-                    if max(ex, ey) <= 1:
-                        atk_roll, _ = entities.roll_check(e, "Might", situational_adv=True)
-                        def_val = 10 + entities.get_gear_bonus(actor, "Aegis")
-                        if atk_roll > def_val:
-                            damage = max(2, entities.get_stat(e, "Might"))
-                            entities.apply_damage(actor, damage, "physical")
-        check_encounter_end(state, actor)
-    else: execute_world_turn(state)
-    if state.get("meta", {}).get("in_combat", False) and not entities.spend_stamina(actor, 1):
-        return f"Too exhausted to move (low Stamina)!"
+    max_dist = 1
+    if max(dx, dy) > max_dist: return f"Move too far!"
+    
+    if not entities.consume_beat(actor, "move"): return "No Move Beats!"
+    if not entities.spend_stamina(actor, 1): return "Exhausted!"
+    
     actor["pos"] = [dest_x, dest_y]; state["latest_action"] = {"actor": actor["name"], "action": "Movement", "target": f"[{dest_x}, {dest_y}]", "mechanical_result": "Moved."}; save_state(state); return "Moved."
 
 def execute_transition(dest_x, dest_y):
@@ -364,7 +379,10 @@ def execute_loot(actor_id, target_id):
     target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
     if not actor or not target: return "Error"
     if max(abs(actor["pos"][0] - target["pos"][0]), abs(actor["pos"][1] - target["pos"][1])) > 1: return "Too far."
-    if entities.loot_all(actor, target): save_state(state); return "Looted."
+    
+    if entities.loot_all(actor, target): 
+        state["latest_action"] = {"actor": actor["name"], "action": "Loot", "target": target["name"], "mechanical_result": "Looted supplies."}
+        save_state(state); return "Looted."
     return "Empty."
 
 def execute_equip(actor_id, item_name):
@@ -383,27 +401,79 @@ def execute_drop(actor_id, item_name):
         save_state(state)
 
 def execute_use(actor_id, item_name):
-    """Dynamically applies consumable effects from items.json."""
     state = load_state()
     actor = next((e for e in state["entities"] if e["id"] == actor_id or e["type"] == "player"), None)
     if not actor or item_name not in actor.get("inventory", []): return "No item."
-    
     items = entities.load_items()
     item_data = items.get("consumables", {}).get(item_name)
-    if not item_data or "effect" not in item_data: return "No effect."
+    if not item_data: return "No data."
+    eff = item_data.get("effect", {})
+    if eff.get("stat") == "hp": actor["hp"] = min(20, actor["hp"] + eff.get("val", 0))
+    actor["inventory"].remove(item_name); save_state(state); return "Used."
+
+def execute_skill_action(actor_id, target_id, skill_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    if not actor or not target: return "Error"
+
+    skills_db = entities.load_skills()
+    skill_data = None
+    stat_used = ""
+
+    for stat, data in skills_db.get("tactics", {}).items():
+        for tier, t_data in data.get("tiers", {}).items():
+            if t_data.get("name") == skill_name:
+                skill_data = t_data; stat_used = stat; break
+        if skill_data: break
+    if not skill_data:
+        for school, data in skills_db.get("anomalies", {}).items():
+            for tier, a_data in data.get("tiers", {}).items():
+                if a_data.get("name") == skill_name:
+                    skill_data = a_data; stat_used = school; break
+            if skill_data: break
+
+    if not skill_data: return "Skill missing."
+
+    cost = skill_data.get("cost", {})
+    s_cost = cost.get("primary", cost.get("stamina", 0))
+    f_cost = cost.get("secondary", cost.get("focus", 0))
     
-    eff = item_data["effect"]
-    stat = eff.get("stat")
-    val = eff.get("val", 0)
-    
-    if stat == "hp":
-        actor["hp"] = min(actor.get("max_hp", 20), actor.get("hp", 0) + val)
-    elif stat == "composure":
-        actor["composure"] = min(actor.get("max_composure", 15), actor.get("composure", 0) + val)
-    
-    actor["inventory"].remove(item_name)
-    save_state(state)
-    return f"Used {item_name} (+{val} {stat})."
+    # Costs are already handled in NPC pulse or Player loop, but we double check pool here
+    if actor["resources"].get("stamina", 0) < s_cost or actor["resources"].get("focus", 0) < f_cost:
+        return "Exhausted!"
+
+    actor["resources"]["stamina"] -= s_cost
+    actor["resources"]["focus"] -= f_cost
+
+    roll_total, roll_log = entities.roll_check(actor, stat_used)
+    success = roll_total >= 12
+
+    if success: mech_result = resolve_skill_tags(actor, target, skill_data, state)
+    else: mech_result = f"{skill_name} FAILED ({roll_total} vs 12)."
+
+    state["latest_action"] = {"actor": actor["name"], "action": skill_name, "target": target["name"], "mechanical_result": mech_result}
+    save_state(state); return mech_result
+
+def resolve_skill_tags(actor, target, skill_data, state):
+    tags = skill_data.get("tags", [])
+    result_parts = []
+    if "push" in tags:
+        ax, ay = actor["pos"]; tx, ty = target["pos"]; dx, dy = tx - ax, ty - ay
+        nx, ny = (1 if dx > 0 else -1 if dx < 0 else 0), (1 if dy > 0 else -1 if dy < 0 else 0)
+        dest = [tx + nx, ty + ny]
+        collision = any(e["pos"] == dest and e.get("hp", 0) > 0 for e in state.get("entities", []))
+        if not collision:
+            target["pos"] = dest
+            result_parts.append(f"Pushed {target['name']}!")
+        else:
+            result_parts.append(f"{target['name']} hit cover!"); entities.apply_damage(target, 2)
+    if "apply_status" in tags:
+        for t in tags:
+            if t not in ["apply_status", "push"]:
+                if apply_status_tag(target, t): result_parts.append(f"Applied {t.replace('_', ' ').capitalize()}.")
+    if not result_parts: result_parts.append(f"Skill {skill_data['name']} resolved.")
+    return " ".join(result_parts)
 
 def execute_stat_action(actor_id, target_id, action_str):
     state = load_state()
@@ -411,31 +481,19 @@ def execute_stat_action(actor_id, target_id, action_str):
     target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
     if not actor or not target: return "Error"
     try: stat_part, action_name = action_str.split("] ", 1); stat_used = stat_part.strip("[")
-    except: return "Invalid format."
+    except: return "Format err."
     
     beat_type = "stamina" if stat_used in ["Might", "Endurance", "Finesse", "Reflexes", "Vitality", "Fortitude"] else "focus"
-    if not entities.consume_beat(actor, beat_type): return f"No {beat_type} beats! Press SPACE."
+    if not entities.consume_beat(actor, beat_type): return "No Pulse Beats!"
     
-    action_data = actions.ACTION_REGISTRY.get(action_name); cost_type = "stamina"; cost_val = 1
-    if action_data: cost_type = action_data["cost"]["type"]; cost_val = action_data["cost"]["val"]
-    if actor["resources"].get(cost_type, 0) < cost_val: return f"Not enough {cost_type}!"
+    action_data = actions.ACTION_REGISTRY.get(action_name); cost_val = action_data["cost"]["val"] if action_data else 1
+    cost_type = action_data["cost"]["type"] if action_data else "stamina"
+    if actor["resources"].get(cost_type, 0) < cost_val: return "Exhausted!"
     
     actor["resources"][cost_type] -= cost_val
-    roll_total, roll_log = entities.roll_check(actor, stat_used)
+    roll_total, _ = entities.roll_check(actor, stat_used)
     
-    target_resist = 10; success = roll_total >= target_resist
-    mech_result = f"Action {action_name} ({stat_used}) SUCCESS!" if success else f"Action {action_name} FAILED."
-    
-    # ACTION MUTATORS
-    if success:
-        if action_name == "Disengage":
-            apply_status_tag(actor, "disengaging")
-        elif action_name == "Break":
-            if "solid" in target.get("tags", []): target["tags"].remove("solid")
-            mech_result = f"Shattered {target['name']}! Barrier destroyed."
-        elif action_name == "Pickpocket":
-            if entities.loot_all(actor, target): mech_result = f"Cleanly lifted items from {target['name']}."
-            else: mech_result = f"Searched {target['name']} but found nothing."
-
+    success = roll_total >= 12
+    mech_result = f"SUCCESS: {action_name}!" if success else f"FAILED: {action_name}."
     state["latest_action"] = {"actor": actor["name"], "action": action_str, "target": target["name"], "mechanical_result": mech_result}
     save_state(state); return mech_result

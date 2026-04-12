@@ -25,7 +25,6 @@ def load_skills():
         return SKILL_CACHE
         
     try:
-        # Check if file exists, if not return empty structure
         if not os.path.exists("data/skills.json"):
             return {"passives": {}, "tactics": {}, "anomalies": {}}
             
@@ -86,7 +85,6 @@ def get_gear_bonus(entity, stat_name):
     for slot, item_name in equip.items():
         if not item_name or item_name == "None": continue
         
-        # Find item in database
         item_data = None
         for cat in ["weapons", "armor", "accessories"]:
             if item_name in items.get(cat, {}):
@@ -100,9 +98,16 @@ def get_gear_bonus(entity, stat_name):
 
 def get_stat(entity, stat_name):
     base = entity.get("stats", {}).get(stat_name, 0)
-    # Always check for dynamic gear bonuses
     base += get_gear_bonus(entity, stat_name)
     return base
+
+def get_attack_stat(entity):
+    """B.R.U.T.A.L. Engine: Returns the stat used for the Offense Track."""
+    return entity.get("tracks", {}).get("offense", "Might")
+
+def get_defense_stat(entity):
+    """B.R.U.T.A.L. Engine: Returns the stat used for the Defense Track."""
+    return entity.get("tracks", {}).get("defense", "Reflexes")
 
 def get_weapon_stats(entity):
     """Retrieves damage and range based on equipped weapon."""
@@ -120,7 +125,6 @@ def get_weapon_stats(entity):
             "tags": w.get("tags", [])
         }
     
-    # Fallback to Unarmed
     unarmed = items.get("weapons", {}).get("Unarmed", {"damage_die": 4, "flat_damage": 0, "range": 1, "stamina_cost": 1})
     return {
         "name": "Unarmed",
@@ -140,12 +144,10 @@ def get_derived_stats(entity):
     }
 
 def get_movement_speed(entity):
-    """Returns the movement distance allowed by a single Move Beat."""
     stats = get_derived_stats(entity)
     return max(1, stats.get("Movement", 1))
 
 def get_best_stat_for_action(player, action_name):
-    """Determines which stat the player is best at for a specific action."""
     data = actions.ACTION_REGISTRY.get(action_name)
     if not data or not data.get("stats"): return None
     
@@ -184,30 +186,24 @@ def spend_stamina(entity, amount):
     return False
 
 def refresh_beats(entity):
-    """Resets the Pulse economy. Respects status effects (Staggered/Stunned)."""
     if "resources" not in entity: entity["resources"] = {}
     tags = entity.get("tags", [])
     
     mv = 0 if "staggered" in tags else 1
     st = 0 if "stunned" in tags else 1
-    fo = 1 # Focus is rarely suppressed by physical statuses
+    fo = 1 
     
     entity["resources"]["beats"] = {"move": mv, "stamina": st, "focus": fo}
 
 def grant_free_beat(entity, beat_type):
-    """Grants a free beat, hard-capped at 2 per round to prevent infinite loops (The Law of Exhaustion)."""
     current_beats = entity.setdefault("resources", {}).setdefault("beats", {"move": 0, "stamina": 0, "focus": 0})
     
     if current_beats.get(beat_type, 0) < 2:
         current_beats[beat_type] += 1
-        print(f"[System] {entity['name']} gained a free {beat_type.capitalize()} Beat! (Total: {current_beats[beat_type]})")
         return True
-    else:
-        print(f"[System] {entity['name']} hit the Exhaustion Cap! Free {beat_type.capitalize()} Beat lost.")
-        return False
+    return False
 
 def consume_beat(entity, beat_type):
-    """Attempts to consume a specific beat. Returns True if successful."""
     res = entity.get("resources", {})
     beats = res.get("beats", {})
     if beats.get(beat_type, 0) > 0:
@@ -215,43 +211,38 @@ def consume_beat(entity, beat_type):
         return True
     return False
 
-def get_best_clash_tactic(entity):
-    """Maps the entity's highest stat to a Clash Matrix tactic."""
-    stats = entity.get("stats", {})
-    if not stats: return "Press" # Fallback
-    
-    tactic_map = {
-        "Might": "Press", "Knowledge": "Press",
-        "Endurance": "Hold", "Logic": "Hold",
-        "Finesse": "Trick", "Awareness": "Trick",
-        "Reflexes": "Maneuver", "Intuition": "Maneuver",
-        "Vitality": "Disengage", "Charm": "Disengage",
-        "Fortitude": "Feint", "Willpower": "Feint"
-    }
-    
-    best_stat = "Might"
-    best_val = -1
-    
-    for stat_name in tactic_map.keys():
-        val = get_stat(entity, stat_name)
-        if val > best_val:
-            best_val = val
-            best_stat = stat_name
-            
-    return tactic_map.get(best_stat, "Press")
-
 def apply_damage(entity, amount, damage_type="physical"):
     if damage_type == "physical" and "hp" in entity:
         entity["hp"] -= amount
+        max_hp = entity.get("max_hp", 20)
+        tags = entity.setdefault("tags", [])
+        trauma_msg = ""
+        
+        if amount >= (max_hp * 0.4):
+            if "maimed" not in tags: 
+                tags.append("maimed")
+                if "staggered" not in tags: tags.append("staggered")
+                trauma_msg = f"🩸 [TRAUMA] {entity['name']} suffers a massive blow and is MAIMED!"
+                
+        if entity["hp"] > 0 and entity["hp"] <= (max_hp * 0.25):
+            if "bleeding" not in tags:
+                tags.append("bleeding")
+                if not trauma_msg:
+                    trauma_msg = f"🩸 [TRAUMA] {entity['name']} is heavily wounded and BLEEDING!"
+                else:
+                    trauma_msg += " and BLEEDING!"
+
         if entity["hp"] <= 0:
             entity["hp"] = 0
             if "hostile" in entity.get("tags", []): entity["tags"].remove("hostile")
             if "dead" not in entity.get("tags", []): entity["tags"].append("dead")
-            return True
-    return False
+            return True, f"💀 {entity['name']} has fallen." # Target died
+            
+        return False, trauma_msg # Target survived
+            
+    return False, ""
 
 def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
-    """Rolls 1d20 + Stat + Gear."""
     tags = entity.get("tags", [])
     has_adv = situational_adv
     has_dis = situational_dis
@@ -280,11 +271,9 @@ def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
     return total, roll_log
 
 def regenerate_resources(entity):
-    """At end of turn, restore basic Stamina and Focus tokens."""
     res = entity.setdefault("resources", {})
     max_s = res.get("max_stamina", 10)
     max_f = res.get("max_focus", 10)
     
-    # NPCs get a flat +2 regen to stay active
     res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
     res["focus"] = min(max_f, res.get("focus", 0) + 2)

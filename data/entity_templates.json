@@ -16,39 +16,45 @@
   "toxic_spores": { "name": "Toxic Spore Pod", "type": "prop", "hp": 2, "tags": ["plant", "poisonous", "fragile"] },
 
   "bandit_thug": { 
-    "name": "Desperate Bandit", "type": "hostile", "hp": 15, 
+    "name": "Desperate Bandit", "type": "hostile", "hp": 15, "species": "Human",
+    "tracks": {"offense": "Might", "defense": "Reflexes"},
     "resources": {"stamina": 10, "max_stamina": 10, "focus": 5, "max_focus": 5},
     "skills": ["Armor Crack"],
     "tags": ["human", "hostile", "flesh", "armed"] 
   },
   "bandit_ambusher": { 
-    "name": "Bandit Ambusher", "type": "hostile", "hp": 12, 
+    "name": "Bandit Ambusher", "type": "hostile", "hp": 12, "species": "Human",
+    "tracks": {"offense": "Finesse", "defense": "Reflexes"},
     "resources": {"stamina": 8, "max_stamina": 8, "focus": 10, "max_focus": 10},
     "skills": ["Surgical Strike"],
     "tags": ["human", "hostile", "flesh", "stealthy"] 
   },
   "frost_wolf": { 
-    "name": "Frost Wolf", "type": "hostile", "hp": 18, 
+    "name": "Frost Wolf", "type": "hostile", "hp": 18, "species": "Beast",
+    "tracks": {"offense": "Finesse", "defense": "Reflexes"},
     "resources": {"stamina": 12, "max_stamina": 12, "focus": 2, "max_focus": 2},
     "skills": ["Predator's Latch"],
     "inventory": ["Frost-Wolf Pelt"],
     "tags": ["beast", "hostile", "flesh", "cold"] 
   },
   "ice_spider": { 
-    "name": "Ice Spider", "type": "hostile", "hp": 10, 
+    "name": "Ice Spider", "type": "hostile", "hp": 10, "species": "Beast",
+    "tracks": {"offense": "Awareness", "defense": "Reflexes"},
     "resources": {"stamina": 6, "max_stamina": 6, "focus": 4, "max_focus": 4},
     "skills": ["Calculated Trap"],
     "inventory": ["Venom Gland"],
     "tags": ["beast", "hostile", "cold", "venomous"] 
   },
   "wolf": { 
-    "name": "Timber Wolf", "type": "hostile", "hp": 14, 
+    "name": "Timber Wolf", "type": "hostile", "hp": 14, "species": "Beast",
+    "tracks": {"offense": "Finesse", "defense": "Reflexes"},
     "resources": {"stamina": 10, "max_stamina": 10, "focus": 2, "max_focus": 2},
     "skills": ["Predator's Latch"],
     "tags": ["beast", "hostile", "flesh"] 
   },
   "bear": { 
-    "name": "Brown Bear", "type": "hostile", "hp": 30, 
+    "name": "Brown Bear", "type": "hostile", "hp": 30, "species": "Beast",
+    "tracks": {"offense": "Might", "defense": "Endurance"},
     "resources": {"stamina": 20, "max_stamina": 20, "focus": 2, "max_focus": 2},
     "skills": ["Grapple/Throw"],
     "tags": ["beast", "hostile", "flesh", "heavy"] 
@@ -57,14 +63,16 @@
   "rat": { "name": "City Rat", "type": "npc", "hp": 2, "tags": ["beast", "flesh", "tiny"] },
   "swamp_leech": { "name": "Giant Leech", "type": "hostile", "hp": 10, "tags": ["beast", "hostile", "water"] },
   "chaos_hound": { 
-    "name": "Chaos Hound", "type": "hostile", "hp": 15, 
+    "name": "Chaos Hound", "type": "hostile", "hp": 15, "species": "Corrupted",
+    "tracks": {"offense": "Willpower", "defense": "Reflexes"},
     "resources": {"stamina": 10, "max_stamina": 10, "focus": 10, "max_focus": 10},
     "skills": ["Gravitational Weight"],
     "tags": ["beast", "hostile", "flesh", "corrupted"] 
   },
 
   "wildling_scout": { 
-    "name": "Wildling Scout", "type": "hostile", "hp": 15, 
+    "name": "Wildling Scout", "type": "hostile", "hp": 15, "species": "Human",
+    "tracks": {"offense": "Awareness", "defense": "Reflexes"},
     "resources": {"stamina": 10, "max_stamina": 10, "focus": 10, "max_focus": 10},
     "skills": ["The Angle"],
     "tags": ["human", "hostile", "flesh"] 
@@ -72,7 +80,8 @@
   "wandering_merchant": { "name": "Wandering Merchant", "type": "npc", "hp": 20, "tags": ["human", "npc", "trader"] },
   "merchant_caravan": { "name": "Caravan Guard", "type": "npc", "hp": 25, "tags": ["human", "npc", "armed"] },
   "imperial_guard": { 
-    "name": "Imperial Guard", "type": "npc", "hp": 30, 
+    "name": "Imperial Guard", "type": "npc", "hp": 30, "species": "Human",
+    "tracks": {"offense": "Might", "defense": "Endurance"},
     "resources": {"stamina": 15, "max_stamina": 15, "focus": 10, "max_focus": 10},
     "skills": ["Armor Crack"],
     "tags": ["human", "npc", "armed", "armored"] 
@@ -80,7 +89,8 @@
   "citizen": { "name": "Outpost Citizen", "type": "npc", "hp": 10, "tags": ["human", "npc", "unarmed"] },
   "shopkeeper": { "name": "Shopkeeper", "type": "npc", "hp": 12, "tags": ["human", "npc", "trader"] },
   "cultist": { 
-    "name": "Dark Cultist", "type": "hostile", "hp": 14, 
+    "name": "Dark Cultist", "type": "hostile", "hp": 14, "species": "Human",
+    "tracks": {"offense": "Willpower", "defense": "Willpower"},
     "resources": {"stamina": 5, "max_stamina": 5, "focus": 15, "max_focus": 15},
     "skills": ["Gravitational Weight"],
     "tags": ["human", "hostile", "flesh", "magic"] 

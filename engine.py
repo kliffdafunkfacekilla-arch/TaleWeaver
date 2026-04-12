@@ -94,10 +94,17 @@ def execute_world_turn(state):
     if "clock" not in state["meta"]: state["meta"]["clock"] = 0
     state["meta"]["clock"] += 1
         
-    # PROCESS AI PULSE
-    for npc in state.get("entities", []):
-        if (npc.get("type") == "hostile" or "hostile" in npc.get("tags", [])) and npc.get("hp", 0) > 0:
-            execute_npc_pulse(state, npc, player)
+    # 1. Gather all active hostiles
+    active_hostiles = [npc for npc in state.get("entities", []) 
+                       if (npc.get("type") == "hostile" or "hostile" in npc.get("tags", [])) 
+                       and npc.get("hp", 0) > 0]
+                       
+    # 2. EXECUTION ADVANTAGE: Sort by Movement stat (Highest goes first)
+    active_hostiles.sort(key=lambda x: entities.get_derived_stats(x).get("Movement", 5), reverse=True)
+
+    # 3. PROCESS AI PULSE IN INITIATIVE ORDER
+    for npc in active_hostiles:
+        execute_npc_pulse(state, npc, player)
 
 def execute_npc_pulse(state, npc, player):
     """
@@ -151,7 +158,7 @@ def execute_npc_pulse(state, npc, player):
                 dist = max(abs(dx), abs(dy))
             else: break
         
-        # PERCEPTION CHECK: Only log if player can see/hear them
+        # PERCEPTION CHECK
         p_stats = entities.get_derived_stats(player)
         if dist <= p_stats.get("Perception", 8):
             log_message(f"🏃 {npc['name']} closes the gap.")
@@ -187,6 +194,17 @@ def end_player_turn():
     check_encounter_end(state, player)
     execute_world_turn(state) 
     
+    # --- BLEEDING RESOLUTION ---
+    for e in state.get("entities", []):
+        if "bleeding" in e.get("tags", []) and e.get("hp", 0) > 0:
+            e["hp"] -= 1
+            log_message(f"🩸 {e['name']} suffers 1 damage from bleeding.")
+            if e["hp"] <= 0:
+                e["hp"] = 0
+                if "hostile" in e.get("tags", []): e["tags"].remove("hostile")
+                if "dead" not in e.get("tags", []): e["tags"].append("dead")
+                log_message(f"☠️ {e['name']} has bled out.")
+
     # Refresh Beats AFTER clearing statuses
     for e in state.get("entities", []):
         tags = e.setdefault("tags", [])
@@ -228,22 +246,37 @@ def execute_attack(actor_id, target_id):
         return f"Exhausted! (Need {w_stats['cost']} Stamina tokens)."
     actor["resources"]["stamina"] -= w_stats["cost"]
 
-    # Combat Resolution
-    attack_total, _ = entities.roll_check(actor, "Might")
-    defense_total, _ = entities.roll_check(target, "Reflexes")
+    # --- TRACK PROFICIENCY RESOLUTION ---
+    att_stat = entities.get_attack_stat(actor)
+    def_stat = entities.get_defense_stat(target)
     
-    log_message(f"⚔️ {actor['name']} attacks {target['name']}...")
+    attack_total, _ = entities.roll_check(actor, att_stat)
+    defense_total, _ = entities.roll_check(target, def_stat)
+    
+    # --- RANGED VS MELEE CONTEXT ---
+    attack_type = "Ranged Attack" if w_stats["range"] > 1 else "Melee Attack"
+    log_message(f"⚔️ {actor['name']} performs a {attack_type.lower()} on {target['name']}...")
 
     if attack_total > defense_total:
-        damage = max(1, random.randint(1, w_stats["die"]) + w_stats["flat"] + entities.get_stat(actor, "Might"))
-        is_dead = entities.apply_damage(target, damage)
+        # Damage scales with the Offense Track stat
+        damage = max(1, random.randint(1, w_stats["die"]) + w_stats["flat"] + entities.get_stat(actor, att_stat))
+        is_dead, trauma_msg = entities.apply_damage(target, damage)
         res = f"HIT for {damage} dmg!" + (" DEAD." if is_dead else "")
         log_message(f"   ↳ {res}")
+        if trauma_msg: log_message(f"   ↳ {trauma_msg}")
     else:
         res = f"Missed."
         log_message(f"   ↳ {res}")
         
-    state["latest_action"] = {"actor": actor["name"], "action": "Attack", "target": target["name"], "mechanical_result": res}
+    state["latest_action"] = {
+        "actor": actor["name"], 
+        "action": attack_type, 
+        "target": target["name"], 
+        "mechanical_result": res,
+        "weapon_used": w_stats["name"]
+    }
+    state["ai_directive"] = f"NARRATOR MODE: Describe a gritty {attack_type.lower()} using a {w_stats['name']}. 2 sentences."
+    
     save_state(state)
     return res
 
@@ -267,6 +300,131 @@ def execute_move(actor_id, dest_x, dest_y):
     state["latest_action"] = {"actor": actor["name"], "action": "Move", "target": f"{dest_x},{dest_y}", "mechanical_result": "Moved."}
     save_state(state)
     return "Moved."
+
+def execute_use(actor_id, item_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    if not actor or item_name not in actor.get("inventory", []): return "Item missing."
+    
+    items_db = entities.load_items()
+    item_data = items_db.get("consumables", {}).get(item_name)
+    if not item_data: return "Cannot use this."
+    
+    effect = item_data.get("effect", {})
+    stat = effect.get("stat")
+    val = effect.get("val", 0)
+    
+    msg = f"Used {item_name}."
+    if stat == "hp":
+        actor["hp"] = min(actor.get("max_hp", 20), actor.get("hp", 0) + val)
+        msg = f"Used {item_name} (+{val} HP)."
+    elif stat == "composure":
+        actor["composure"] = min(actor.get("max_composure", 20), actor.get("composure", 0) + val)
+        msg = f"Used {item_name} (+{val} Composure)."
+        
+    if item_name == "Bandage" and "bleeding" in actor.get("tags", []):
+        actor["tags"].remove("bleeding")
+        msg += " Bleeding stopped."
+        
+    actor["inventory"].remove(item_name)
+    log_message(f"💊 {actor['name']} {msg.lower()}")
+    save_state(state)
+    return msg
+
+def execute_equip(actor_id, item_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    if not actor: return "Actor missing."
+    if entities.equip_item(actor, item_name):
+        log_message(f"🛡️ {actor['name']} equipped {item_name}.")
+        save_state(state); return f"Equipped {item_name}."
+    return "Equip failed."
+
+def execute_unequip(actor_id, slot):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    if not actor: return "Actor missing."
+    if entities.unequip_item(actor, slot):
+        log_message(f"🎒 {actor['name']} unequipped {slot}.")
+        save_state(state); return f"Unequipped {slot}."
+    return "Unequip failed."
+
+def execute_drop(actor_id, item_name):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    if not actor or item_name not in actor.get("inventory", []): return "Item missing."
+    actor["inventory"].remove(item_name)
+    log_message(f"🗑️ {actor['name']} dropped {item_name}.")
+    save_state(state); return f"Dropped {item_name}."
+
+def execute_loot(actor_id, target_id):
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    if not actor or not target: return "Target missing."
+    if entities.loot_all(actor, target):
+        log_message(f"💰 {actor['name']} looted {target['name']}.")
+        save_state(state); return f"Looted {target['name']}."
+    return "Nothing to loot."
+
+def execute_examine(actor_id, target_id):
+    state = load_state()
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    if not target: return "Target missing."
+    tags = ", ".join(target.get("tags", []))
+    res = f"{target['name']}: HP {target.get('hp','?')}, Tags: [{tags}]"
+    log_message(f"👁️ {res}")
+    return res
+
+def execute_examine_area(actor_id, x, y):
+    state = load_state()
+    ents = [e for e in state.get("entities", []) if e["pos"] == [x, y]]
+    if not ents: return "Nothing but the cold void here."
+    res = ", ".join([e["name"] for e in ents])
+    log_message(f"👁️ Area at {x},{y}: Found {res}")
+    return f"Found {res}"
+
+def execute_stat_action(actor_id, target_id, selection):
+    """
+    Handles actions like '[MIGHT] Bash' chosen from context menus.
+    """
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    if not actor or not target: return "Error"
+    
+    try:
+        stat_part, action_name = selection.split("] ")
+        stat_name = stat_part.strip("[")
+    except ValueError:
+        return f"Unknown action: {selection}"
+
+    action_data = actions.ACTION_REGISTRY.get(action_name)
+    if not action_data: return "Action not found."
+
+    cost = action_data.get("cost", {})
+    if not entities.consume_beat(actor, cost.get("type", "stamina")):
+        return f"No {cost['type'].capitalize()} Beat!"
+    if not entities.spend_stamina(actor, cost.get("val", 0)):
+         return "Exhausted!"
+
+    log_message(f"🎲 {actor['name']} attempts {action_name} on {target['name']}...")
+    roll_total, _ = entities.roll_check(actor, stat_name)
+    
+    if roll_total >= 14:
+        if action_data["category"] == "Combat":
+            is_dead, trauma = entities.apply_damage(target, 5)
+            res = f"SUCCESS: Dealt 5 dmg!" + (" DEAD." if is_dead else "")
+            if trauma: res += f" {trauma}"
+        else:
+            res = "SUCCESS: Effect triggered."
+        log_message(f"   ↳ {res}")
+    else:
+        res = "FAILED."
+        log_message(f"   ↳ {res}")
+        
+    save_state(state)
+    return res
 
 def execute_skill_action(actor_id, target_id, skill_name):
     state = load_state()
@@ -325,7 +483,8 @@ def resolve_skill_tags(actor, target, skill_data, state):
         if not any(e["pos"] == dest and e.get("hp", 0) > 0 for e in state.get("entities", [])):
             target["pos"] = dest; result_parts.append(f"Pushed {target['name']}")
         else:
-            entities.apply_damage(target, 2); result_parts.append(f"Wall-impact (2 dmg)")
+            is_dead, trauma = entities.apply_damage(target, 2); result_parts.append(f"Wall-impact (2 dmg)")
+            if trauma: result_parts.append(trauma)
 
     if "control" in tags or "grapple" in tags:
         apply_status_tag(target, "grappled")

@@ -15,7 +15,9 @@ CELL_SIZE = 40
 GRID_WIDTH = 20  
 GRID_HEIGHT = 15 
 UI_HEIGHT = 180 
-WINDOW_WIDTH = CELL_SIZE * GRID_WIDTH
+LOG_WIDTH = 350
+# Window Width covers the map (800) + the new log panel (350)
+WINDOW_WIDTH = (CELL_SIZE * GRID_WIDTH) + LOG_WIDTH
 WINDOW_HEIGHT = CELL_SIZE * GRID_HEIGHT + UI_HEIGHT 
 
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -38,7 +40,7 @@ icon_font = pygame.font.SysFont("consolas", 20, bold=True)
 title_font = pygame.font.SysFont("consolas", 36, bold=True)
 
 app_state = "MAIN_MENU"
-status_text = "System Online. Immersive Sim Engine active."
+status_text = "System Online. Log Panel linked."
 transition_target = None
 
 context_menu = {
@@ -72,8 +74,10 @@ def get_camera_offset(map_data):
     return cam_x, cam_y
 
 def draw_grid():
-    for x in range(0, WINDOW_WIDTH, CELL_SIZE): pygame.draw.line(screen, COLORS["grid"], (x, 0), (x, WINDOW_HEIGHT - UI_HEIGHT))
-    for y in range(0, WINDOW_HEIGHT - UI_HEIGHT, CELL_SIZE): pygame.draw.line(screen, COLORS["grid"], (0, y), (WINDOW_WIDTH, y))
+    # Only draw grid for map area (up to WINDOW_WIDTH - LOG_WIDTH)
+    map_width = WINDOW_WIDTH - LOG_WIDTH
+    for x in range(0, map_width + 1, CELL_SIZE): pygame.draw.line(screen, COLORS["grid"], (x, 0), (x, WINDOW_HEIGHT - UI_HEIGHT))
+    for y in range(0, WINDOW_HEIGHT - UI_HEIGHT + 1, CELL_SIZE): pygame.draw.line(screen, COLORS["grid"], (0, y), (map_width, y))
 
 def draw_entities(map_data, cam_x, cam_y):
     for entity in map_data.get("entities", []):
@@ -139,15 +143,11 @@ def generate_menu_options(target, player, page="main"):
             if "hostile" in target.get("tags", []) and "dead" not in target.get("tags", []): options.append("Attack")
             if "item" in target.get("tags", []) or "dead" in target.get("tags", []): options.append("Loot")
             if "container" in target.get("tags", []): options.append("Open")
-        
-        # Priority: Learned Skills (Tactics/Anomalies)
         for skill in learned_skills:
-            if skill in valid_actions:
-                options.append(skill)
-
+            if skill in valid_actions: options.append(skill)
         stat_actions = []
         for act in valid_actions:
-            if act in learned_skills: continue # Already added
+            if act in learned_skills: continue
             best_stat = entities.get_best_stat_for_action(player, act)
             if best_stat: stat_actions.append((act, best_stat, entities.get_stat(player, best_stat)))
         stat_actions.sort(key=lambda x: x[2], reverse=True)
@@ -156,12 +156,9 @@ def generate_menu_options(target, player, page="main"):
         if len(valid_actions) > 3: options.append("More Actions...")
     elif page == "more":
         for act in valid_actions:
-            bs = entities.get_best_stat_for_action(player, act)
-            if bs: options.append(f"[{bs}] {act}")
-            else: options.append(act)
+            bs = entities.get_best_stat_for_action(player, act); options.append(f"[{bs}] {act}" if bs else act)
         options.append("Back")
-    options.append("Cancel"); seen = set()
-    return [x for x in options if not (x in seen or seen.add(x))]
+    options.append("Cancel"); seen = set(); return [x for x in options if not (x in seen or seen.add(x))]
 
 def draw_main_menu():
     screen.fill(COLORS["bg"])
@@ -178,38 +175,25 @@ def draw_tactical_screen(map_data, cam_x, cam_y):
     screen.fill(COLORS["bg"]); draw_grid(); draw_entities(map_data, cam_x, cam_y); draw_context_menu()
     pygame.draw.rect(screen, COLORS["ui_bg"], (0, WINDOW_HEIGHT - UI_HEIGHT, WINDOW_WIDTH, UI_HEIGHT))
     pygame.draw.line(screen, (100, 100, 100), (0, WINDOW_HEIGHT - UI_HEIGHT), (WINDOW_WIDTH, WINDOW_HEIGHT - UI_HEIGHT), 2)
-    draw_text_wrapped(screen, status_text, COLORS["text"], pygame.Rect(15, WINDOW_HEIGHT - UI_HEIGHT + 15, WINDOW_WIDTH - 30, UI_HEIGHT - 30), font)
+    draw_text_wrapped(screen, status_text, COLORS["text"], pygame.Rect(15, WINDOW_HEIGHT - UI_HEIGHT + 15, (WINDOW_WIDTH - LOG_WIDTH) - 30, UI_HEIGHT - 30), font)
     player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
     if not player: return
     hp, mhp = player.get("hp", 0), player.get("max_hp", 20)
     st, mst = player.get("resources", {}).get("stamina", 0), player.get("resources", {}).get("max_stamina", 10)
     fo, mfo = player.get("resources", {}).get("focus", 0), player.get("resources", {}).get("max_focus", 10)
-    s_color = COLORS["stamina"]
-    if st <= 0: s_color = COLORS["danger"]
-    elif st <= 3: s_color = COLORS["warning"]
-    vitals_x = WINDOW_WIDTH - 420
-    screen.blit(font.render(f"JAX:", True, COLORS["title"]), (vitals_x, 15))
-    screen.blit(font.render(f"HP: {hp}/{mhp}", True, COLORS["text"]), (vitals_x + 50, 15))
-    screen.blit(font.render(f"STAMINA: {st}/{mst}", True, s_color), (vitals_x + 140, 15))
-    screen.blit(font.render(f"FOCUS: {fo}/{mfo}", True, COLORS["focus"]), (vitals_x + 280, 15))
+    vitals_x = (WINDOW_WIDTH - LOG_WIDTH) - 420
+    screen.blit(font.render(f"JAX:", True, COLORS["title"]), (vitals_x, WINDOW_HEIGHT - UI_HEIGHT + 15))
+    screen.blit(font.render(f"HP: {hp}/{mhp}", True, COLORS["text"]), (vitals_x + 50, WINDOW_HEIGHT - UI_HEIGHT + 15))
+    screen.blit(font.render(f"STAMINA: {st}/{mst}", True, COLORS["stamina"] if st > 3 else COLORS["warning"]), (vitals_x + 140, WINDOW_HEIGHT - UI_HEIGHT + 15))
+    screen.blit(font.render(f"FOCUS: {fo}/{mfo}", True, COLORS["focus"]), (vitals_x + 280, WINDOW_HEIGHT - UI_HEIGHT + 15))
     is_combat = map_data.get("meta", {}).get("in_combat", False)
-    beats = player.get("resources", {}).get("beats", {})
-    s_beat = beats.get("stamina", 0)
+    mode_text = "🚨 ENCOUNTER MODE 🚨" if is_combat else "👁️ EXPLORE MODE (Free)"
+    screen.blit(title_font.render(mode_text, True, COLORS["hostile"] if is_combat else COLORS["npc"]), (vitals_x, WINDOW_HEIGHT - UI_HEIGHT + 40))
     if is_combat:
-        mode_color = COLORS["hostile"] if s_beat > 0 else (130, 130, 130)
-        mode_text = "🚨 ENCOUNTER MODE 🚨" if s_beat > 0 else "🛑 ROUND ENDED (Press SPACE) 🛑"
+        b = player.get("resources", {}).get("beats", {}); tc = entities.get_best_clash_tactic(player)
+        screen.blit(font.render(f"PULSE: Move:[{b.get('move',0)}] Stamina:[{b.get('stamina',0)}] Focus:[{b.get('focus',0)}] | Clash: {tc}", True, COLORS["title"]), (vitals_x, WINDOW_HEIGHT - UI_HEIGHT + 80))
     else:
-        mode_color = COLORS["npc"]
-        mode_text = "👁️ EXPLORE MODE (Free)"
-    screen.blit(title_font.render(mode_text, True, mode_color), (vitals_x, 40))
-    if is_combat:
-        m, s, f = beats.get("move", 0), beats.get("stamina", 0), beats.get("focus", 0)
-        tactic = entities.get_best_clash_tactic(player)
-        beat_str = f"PULSE: Move:[{m}] Stamina:[{s}] Focus:[{f}] | Clash: {tactic}"
-        screen.blit(font.render(beat_str, True, COLORS["title"]), (vitals_x, 80))
-    else:
-        global_pos = map_data.get("meta", {}).get("global_pos", [0,0])
-        screen.blit(font.render(f"World: {global_pos} | Clock: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (vitals_x, 80))
+        screen.blit(font.render(f"World: {map_data.get('meta', {}).get('global_pos', [0,0])} | Clock: {map_data.get('meta', {}).get('clock', 0)}", True, (100, 100, 100)), (vitals_x, WINDOW_HEIGHT - UI_HEIGHT + 80))
 
 def draw_transition_prompt():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT)); overlay.set_alpha(150); overlay.fill((0, 0, 0)); screen.blit(overlay, (0, 0))
@@ -239,6 +223,8 @@ def trigger_narration():
 def main():
     global status_text, app_state, transition_target
     clock = pygame.time.Clock(); map_data = load_map_data(); cam_x, cam_y = get_camera_offset(map_data)
+    log_rect = pygame.Rect(WINDOW_WIDTH - LOG_WIDTH, 0, LOG_WIDTH, WINDOW_HEIGHT - UI_HEIGHT)
+    
     while True:
         if app_state == "MAIN_MENU":
             btns = draw_main_menu()
@@ -284,17 +270,14 @@ def main():
             p_id = player.get("id", player.get("name")) if player else None
             
             draw_tactical_screen(map_data, cam_x, cam_y)
+            ui_manager.draw_combat_log(screen, map_data, log_rect, font, title_font, COLORS)
             cam_x, cam_y = get_camera_offset(map_data)
             
-            # --- NEW: TOOLTIP INJECTION ---
             mx, my = pygame.mouse.get_pos()
-            # Only draw tooltip if the mouse is on the map and the menu isn't open
-            if my < WINDOW_HEIGHT - UI_HEIGHT and not context_menu["active"]:
+            if my < WINDOW_HEIGHT - UI_HEIGHT and not context_menu["active"] and not log_rect.collidepoint(mx, my):
                 gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
                 hovered = next((e for e in map_data.get("entities", []) if e.get("pos") == [gx, gy]), None)
-                if hovered:
-                    ui_manager.draw_hover_tooltip(screen, hovered, (mx, my), font, COLORS)
-            # ------------------------------
+                if hovered: ui_manager.draw_hover_tooltip(screen, hovered, (mx, my), font, COLORS)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
@@ -311,7 +294,10 @@ def main():
                             elif event.key in [pygame.K_d, pygame.K_RIGHT]: attempt_move(p_id, px + 1, py, map_data)
                             map_data = load_map_data()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mx, my = event.pos; gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
+                    mx, my = event.pos
+                    if log_rect.collidepoint(mx, my): continue # Ignore clicks on the log panel
+                    
+                    gx, gy = (mx // CELL_SIZE) + cam_x, (my // CELL_SIZE) + cam_y
                     ents = [e for e in map_data.get("entities", []) if e["pos"] == [gx, gy]]; clicked_entity = None
                     clicked_entity = next((e for e in ents if e.get("type") in ["hostile", "npc", "player"] and "dead" not in e.get("tags", [])), None)
                     if not clicked_entity and ents: clicked_entity = ents[0]
@@ -332,16 +318,14 @@ def main():
                                             if sel in ["Loot", "Open"]: res = engine.execute_loot(p_id, t_id)
                                             elif sel == "Attack": res = engine.execute_attack(p_id, t_id)
                                             elif sel == "Examine": res = engine.execute_examine(p_id, t_id)
-                                            elif sel == "Move Here": res = "Moved."; attempt_move(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1], map_data)
+                                            elif sel == "Move Here": res = engine.execute_move(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Area": res = engine.execute_examine_area(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Self": res = engine.execute_examine(p_id, p_id)
                                             elif sel.startswith("["): res = engine.execute_stat_action(p_id, t_id, sel)
-                                            # Learned Skills Handler
                                             elif sel in player.get("skills", []): res = engine.execute_skill_action(p_id, t_id, sel)
                                             else: res = "Unknown command."
-                                            
                                             status_text = f"System: {res}"; map_data = load_map_data()
-                                            if "No" not in res and "exhausted" not in res and "failed" not in res: threading.Thread(target=trigger_narration, daemon=True).start()
+                                            if "No" not in res and "exhausted" not in res: threading.Thread(target=trigger_narration, daemon=True).start()
                             context_menu["active"] = False; continue
                         elif my < WINDOW_HEIGHT - UI_HEIGHT:
                             if clicked_entity and "hostile" in clicked_entity.get("tags", []) and "dead" not in clicked_entity.get("tags", []):

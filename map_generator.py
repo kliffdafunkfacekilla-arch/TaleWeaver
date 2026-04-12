@@ -1,4 +1,4 @@
-﻿import json
+import json
 import random
 
 def load_json(filepath):
@@ -40,6 +40,7 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
             },
             "equipment": {"weapon": "Heavy Boarding Hook", "armor": "Leather River-Coat", "accessory": "Aether-Compass"},
             "inventory": ["Torch", "Bandage", "Bottle of Fir-Gin"],
+            "skills": ["Grapple/Throw", "Calculated Trap", "Armor Crack"],
             "tags": ["player", "flesh", "river_folk", "biped", "amphibious", "whisker-sense"]
         }
         map_state["entities"].append(new_player)

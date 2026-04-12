@@ -1,11 +1,16 @@
 {
   "weapons": {
-    "Heavy Boarding Hook": { "type": "weapon", "tags": ["kinetic-momentum", "flanking", "brutal"], "damage_die": "1d8", "stamina_cost": 2, "weight": 3 }
+    "Heavy Boarding Hook": { "type": "weapon", "tags": ["kinetic-momentum", "flanking", "brutal"], "damage_die": 8, "flat_damage": 0, "range": 2, "stamina_cost": 2, "weight": 3 },
+    "Unarmed": { "type": "weapon", "tags": ["natural"], "damage_die": 4, "flat_damage": 0, "range": 1, "stamina_cost": 1, "weight": 0 }
   },
   "armor": {
     "Leather River-Coat": { "type": "armor", "stamina_tax": 2, "aegis_bonus": 2, "weight": 1 }
   },
   "accessories": {
     "Aether-Compass": { "type": "accessory", "focus_tax": 1, "awareness_bonus": 1, "weight": 1 }
+  },
+  "consumables": {
+    "Bandage": { "type": "consumable", "effect": { "stat": "hp", "val": 10 }, "weight": 0.5 },
+    "Bottle of Fir-Gin": { "type": "consumable", "effect": { "stat": "composure", "val": 5 }, "weight": 1.0 }
   }
 }

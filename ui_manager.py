@@ -46,7 +46,7 @@ def draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH
     elif UI_STATE["active_tab"] == "Inventory":
         _draw_inventory_tab(screen, player, sheet_rect, font, COLORS, clickable_zones)
     elif UI_STATE["active_tab"] == "Skills":
-        screen.blit(title_font.render("Skill System Offline (Phase 4)", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 100))
+        _draw_skills_tab(screen, player, sheet_rect, font, COLORS, clickable_zones)
 
     # Draw Sub-Context Menu (Right Click on items)
     if UI_STATE["context_menu"]["active"]:
@@ -67,6 +67,69 @@ def draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH
     # Footer
     screen.blit(font.render("Press 'C' or 'ESC' to close", True, (150, 150, 150)), (sheet_rect.centerx - 100, sheet_rect.bottom - 30))
     return clickable_zones
+
+def _draw_skills_tab(screen, player, sheet_rect, font, COLORS, clickable_zones):
+    screen.blit(font.render("--- ACQUIRED SKILLS (Tactics & Anomalies) ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 80))
+    
+    player_skills = player.get("skills", [])
+    if not player_skills:
+        screen.blit(font.render("No skills acquired. Seek a Magistar.", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 120))
+        return
+
+    skills_db = entities.load_skills()
+    y_off = 120
+    
+    for skill_name in player_skills:
+        skill_data = None
+        category = ""
+        
+        # Search Tactics
+        for stat, data in skills_db.get("tactics", {}).items():
+            for tier, t_data in data.get("tiers", {}).items():
+                if t_data.get("name") == skill_name:
+                    skill_data = t_data
+                    category = f"Tactic ({stat})"
+                    break
+            if skill_data: break
+            
+        # Search Anomalies if not found in Tactics
+        if not skill_data:
+            for school, data in skills_db.get("anomalies", {}).items():
+                for tier, a_data in data.get("tiers", {}).items():
+                    if a_data.get("name") == skill_name:
+                        skill_data = a_data
+                        category = f"Anomaly ({school})"
+                        break
+                if skill_data: break
+
+        if skill_data:
+            # Render Row
+            skill_rect = pygame.Rect(sheet_rect.x + 20, sheet_rect.y + y_off, sheet_rect.width - 40, 30)
+            if skill_rect.collidepoint(pygame.mouse.get_pos()):
+                pygame.draw.rect(screen, COLORS["menu_hover"], skill_rect)
+            
+            # Name and Category
+            screen.blit(font.render(f"{skill_name}", True, COLORS["text"]), (skill_rect.x + 5, skill_rect.y + 5))
+            screen.blit(font.render(f"[{category}]", True, (150, 150, 150)), (skill_rect.x + 250, skill_rect.y + 5))
+            
+            # Costs
+            cost = skill_data.get("cost", {})
+            # Tactics schema uses primary/secondary
+            # Anomalies schema uses stamina/focus
+            primary_val = cost.get("primary", cost.get("stamina", 0))
+            secondary_val = cost.get("secondary", cost.get("focus", 0))
+            
+            x_cursor = skill_rect.x + 500
+            if primary_val > 0:
+                cost_text = f"S:{primary_val}"
+                screen.blit(font.render(cost_text, True, COLORS["stamina"]), (x_cursor, skill_rect.y + 5))
+                x_cursor += 60
+            if secondary_val > 0:
+                cost_text = f"F:{secondary_val}"
+                screen.blit(font.render(cost_text, True, COLORS["focus"]), (x_cursor, skill_rect.y + 5))
+
+            clickable_zones.append({"rect": skill_rect, "action": "skill_item", "skill": skill_name})
+            y_off += 35
 
 def _draw_character_tab(screen, player, sheet_rect, font, COLORS, clickable_zones):
     hp_text = f"HP: {player.get('hp',0)}/{player.get('max_hp',0)}"

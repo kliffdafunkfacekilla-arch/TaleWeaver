@@ -9,6 +9,7 @@ ACTION_REGISTRY = {
     "Suplex": {"stats": ["Might"], "targets": ["hostile"], "tags": ["flesh"], "cost": {"type": "stamina", "val": 2}, "category": "Combat", "desc": "Grapple and throw an enemy with raw power."},
     "Lifting": {"stats": ["Might"], "targets": ["prop"], "tags": ["heavy"], "cost": {"type": "stamina", "val": 1}, "category": "Utility", "desc": "Move massive debris or loads."},
     "Scaling": {"stats": ["Might"], "targets": ["terrain"], "tags": ["vertical"], "cost": {"type": "stamina", "val": 1}, "category": "Utility", "desc": "Upper-body sheer force climbing."},
+    "Break": {"stats": ["Might"], "targets": ["prop"], "tags": ["solid"], "cost": {"type": "stamina", "val": 1}, "category": "Utility", "desc": "Shatter a physical object or barrier."},
     "Structural Load": {"stats": ["Might"], "targets": ["prop", "terrain"], "tags": ["solid"], "cost": {"type": "focus", "val": 1}, "category": "Knowledge", "desc": "Assess weight limits and mass."},
     "Looming": {"stats": ["Might"], "targets": ["npc"], "tags": [], "cost": {"type": "stamina", "val": 1}, "category": "Social", "desc": "Physical intimidation by mass."},
 
@@ -22,6 +23,7 @@ ACTION_REGISTRY = {
     "Surgical Strike": {"stats": ["Finesse"], "targets": ["hostile"], "tags": ["armored"], "cost": {"type": "stamina", "val": 1}, "category": "Combat", "desc": "Strike ignoring physical protection."},
     "Pick Lock": {"stats": ["Finesse"], "targets": ["prop"], "tags": ["locked"], "cost": {"type": "focus", "val": 1}, "category": "Utility", "desc": "Bypassing mechanisms by touch."},
     "Anatomical Precision": {"stats": ["Finesse"], "targets": ["hostile", "npc"], "tags": ["flesh"], "cost": {"type": "focus", "val": 1}, "category": "Knowledge", "desc": "Identify biological weak points."},
+    "Pickpocket": {"stats": ["Finesse"], "targets": ["npc", "hostile"], "tags": [], "cost": {"type": "stamina", "val": 1}, "category": "Utility", "desc": "Theft from an unaware or occupied target."},
     "Sleight of Hand": {"stats": ["Finesse"], "targets": ["npc"], "tags": [], "cost": {"type": "stamina", "val": 1}, "category": "Social", "desc": "Planting evidence or subtle gestures."},
 
     # --- REFLEX (Momentum & Speed) ---

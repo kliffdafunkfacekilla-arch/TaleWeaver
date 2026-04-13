@@ -97,3 +97,73 @@ def build_mechanical_deck(weaver_data, region_threat_level=1):
     deck[-1]["threat"] += 1 # Bosses are harder
     
     return deck
+def build_macro_deck(weaver_data):
+    """
+    Macro Deck Builder: Generates a sequence of Overworld Macro Steps.
+    """
+    theme = weaver_data.get("dominant_theme", "combat")
+    factions = weaver_data.get("involved_factions", ["wild_beasts"])
+    
+    regions = ["The Sump-Mire", "Iron Caldera", "Heartland Alliance", "River Folk Outpost"]
+    target_region = random.choice(regions)
+    building_type = "bandit_camp" if "sump_kin" in factions else "ruined_laboratory"
+    
+    # 2-3 Step Algorithm
+    deck = [
+        {
+            "type": "travel", 
+            "target_region": target_region, 
+            "objective": f"Travel to {target_region} to follow the lead: {weaver_data['story_hook'][:50]}..."
+        },
+        {
+            "type": "explore_interior", 
+            "building_type": building_type, 
+            "objective": f"Infiltrate the {building_type.replace('_', ' ')} and complete the mission."
+        }
+    ]
+    
+    # Optional 3rd step for "Puzzle" or high complexity
+    if theme == "puzzle" or random.random() > 0.7:
+        deck.insert(1, {
+            "type": "scout", 
+            "target_region": target_region, 
+            "objective": "Gather intelligence or scout the perimeter before entering."
+        })
+        
+    return deck
+
+def build_interior_deck(building_type, is_quest=False, quest_data=None):
+    """Builds a sequence of rooms for an interior location."""
+    
+    # 1. Non-Quest Buildings (Taverns, Shops, Banks)
+    if not is_quest:
+        # Just a single, safe room
+        return [{"room_type": f"{building_type}_main", "event": "social", "threat": 0}]
+    
+    # 2. Quest Dungeons (Ruins, Bandit Camps, Magistar Vaults)
+    deck_size = random.randint(3, 5) # A 3 to 5 room dungeon
+    deck = []
+    
+    # Card 1: The Entrance
+    deck.append({
+        "room_type": "entrance", 
+        "event": "trap_or_guard", 
+        "threat": 1
+    })
+    
+    # Cards 2-4: The Gauntlet
+    for _ in range(deck_size - 2):
+        deck.append({
+            "room_type": "corridor", 
+            "event": "combat", 
+            "threat": 2
+        })
+        
+    # Final Card: The Climax
+    deck.append({
+        "room_type": "boss_chamber", 
+        "event": "boss_combat", 
+        "threat": 3
+    })
+    
+    return deck

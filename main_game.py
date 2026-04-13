@@ -50,17 +50,19 @@ context_menu = {
 }
 
 def load_map_data():
-    """Reads the JSON map state with a retry loop."""
+    """Reads the JSON map state with a retry loop, extracting the local map."""
     for _ in range(10):
         try:
             with open("local_map_state.json", "r") as f:
-                return json.load(f)
+                state = json.load(f)
+                # Align with 'wrapped' architecture
+                if "local_map_state" in state:
+                    return state["local_map_state"]
+                return state
         except (PermissionError, json.JSONDecodeError):
             time.sleep(0.01)
             continue
-        except FileNotFoundError:
-            return {"entities": []}
-    return {"entities": []}
+    return {"entities": [], "meta": {}}
 
 def get_camera_offset(map_data):
     player_pos = [25, 25] 
@@ -144,6 +146,13 @@ def generate_menu_options(target, player, page="main"):
             if "item" in target.get("tags", []) or "dead" in target.get("tags", []): options.append("Loot")
             if "container" in target.get("tags", []): options.append("Open")
             if "story_seed" in target.get("tags", []): options.append("[Investigate]")
+            tags = target.get("tags", [])
+            if any(t in tags for t in ["transition_door", "next_room_door", "exit_door", "quest_entrance"]):
+                is_combat = map_data.get("meta", {}).get("in_combat", False)
+                if not is_combat:
+                    if "quest_entrance" in tags: options.append("[Enter Quest Location]")
+                    else: options.append("[Go Through]" if any(t in tags for t in ["transition_door", "next_room_door"]) else "[Exit to Surface]")
+            if "building" in tags: options.append("[Enter]")
         for skill in learned_skills:
             if skill in valid_actions: options.append(skill)
         stat_actions = []
@@ -334,6 +343,17 @@ def main():
                                             elif sel == "[Investigate]":
                                                 status_text = "Director: [Thinking...]"; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
                                                 res = engine.investigate_seed(p_id, t_id)
+                                            elif sel == "[Enter]" or sel == "[Enter Quest Location]":
+                                                state = engine.load_state()
+                                                target = next((e for e in map_data["entities"] if e.get("id") == t_id), None)
+                                                b_type = target.get("building_type", "building")
+                                                res = engine.enter_interior(state, b_type, is_quest=(sel == "[Enter Quest Location]"))
+                                            elif sel == "[Go Through]":
+                                                state = engine.load_state()
+                                                res = engine.advance_interior_room(state)
+                                            elif sel == "[Exit to Surface]":
+                                                state = engine.load_state()
+                                                res = engine.exit_interior(state)
                                             elif sel.startswith("["): res = engine.execute_stat_action(p_id, t_id, sel)
                                             elif sel in player.get("skills", []): res = engine.execute_skill_action(p_id, t_id, sel)
                                             else: res = "Unknown command."

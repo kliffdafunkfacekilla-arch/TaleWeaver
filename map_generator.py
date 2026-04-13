@@ -6,7 +6,7 @@ def load_json(filepath):
         with open(filepath, "r", encoding="utf-8-sig") as f: return json.load(f)
     except: return {}
 
-def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
+def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None, quest_deck=None):
     world_map = load_json("data/world_map.json")
     world_data = load_json("data/world_regions.json")
     story_data = load_json("data/story_quests.json")
@@ -110,6 +110,21 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
                     e = template.copy(); e["id"] = f"quest_{random.randint(1000, 9999)}"; e["pos"] = inj_entity["guaranteed_pos"]
                     map_state["entities"].append(e)
 
+    # --- MACRO QUEST OBJECTIVE SPAWNING ---
+    if quest_deck and len(quest_deck) > 0:
+        step = quest_deck[0]
+        if step.get("type") == "explore_interior":
+            b_type = step.get("building_type", "bandit_camp")
+            # Spawn a distinct quest prop
+            q_prop = {
+                "id": "quest_loc_01", 
+                "name": "Quest Location", "type": "prop", 
+                "pos": [15, 15], # Fixed pos for simplicity in this version
+                "building_type": b_type,
+                "tags": ["quest_entrance", "solid", "high_value"]
+            }
+            map_state["entities"].append(q_prop)
+
     # --- INJECT STORY SEED ---
     seed_type = random.choice(["wrecked_sump_cart", "bloody_satchel"])
     seed_tmpl = templates.get(seed_type)
@@ -122,3 +137,46 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
 
     with open("local_map_state.json", "w", encoding="utf-8") as f: json.dump(map_state, f, indent=2)
     return True
+
+def generate_interior_room(card_data):
+    """Builds a structured tactical grid based on the room card."""
+    room_type = card_data.get("room_type", "generic_room")
+    threat = card_data.get("threat", 0)
+    
+    # Initialize a fresh map state dictionary
+    new_map = {
+        "meta": {"grid_size": [15, 15], "room_type": room_type, "in_combat": False},
+        "entities": []
+    }
+    
+    # BOX THE ROOM WITH WALLS (Standard Architecture)
+    for x in range(15):
+        for y in range(15):
+            if x == 0 or x == 14 or y == 0 or y == 14:
+                # Leave a gap for the door at [7, 0]
+                if x == 7 and y == 0: continue
+                new_map["entities"].append({"name": "Stone Wall", "type": "prop", "tags": ["wall", "solid"], "pos": [x, y]})
+    
+    # Add the Player
+    new_map["entities"].append({
+        "id": "char_01", "name": "Captain Jax", "type": "player", "pos": [7, 14],
+        "species": "Human", "tracks": {"offense": "Might", "defense": "Reflexes"},
+        "hp": 20, "max_hp": 20, "resources": {"stamina": 10, "max_stamina": 10, "focus": 10, "max_focus": 10},
+        "stats": {"Might": 4, "Reflexes": 3, "Awareness": 6}, "tags": ["player", "flesh"]
+    })
+    
+    # Spawn a door to the next room at the top of the map
+    new_map["entities"].append({"name": "Heavy Door", "type": "prop", "tags": ["transition_door", "solid"], "pos": [7, 0]})
+    
+    # If it's a threat room, spawn enemies
+    if threat > 0:
+        new_map["meta"]["in_combat"] = True
+        # Simple threat-based spawn for now
+        for i in range(threat + 1):
+            new_map["entities"].append({
+                "id": f"interior_enemy_{i}", "name": "Dungeon Guard", "type": "hostile", 
+                "pos": [random.randint(2, 12), random.randint(2, 10)],
+                "hp": 10, "max_hp": 10, "tags": ["hostile", "flesh"]
+            })
+        
+    return new_map

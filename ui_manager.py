@@ -7,6 +7,11 @@ UI_STATE = {
     "context_menu": {"active": False, "x": 0, "y": 0, "item": None, "options": []}
 }
 
+def draw_text(screen, text, x, y, font, color):
+    """Simple helper for rendering text to screen."""
+    surf = font.render(text, True, color)
+    screen.blit(surf, (x, y))
+
 def draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH, WINDOW_HEIGHT):
     player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
     if not player: return []

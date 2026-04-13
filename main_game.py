@@ -32,7 +32,7 @@ COLORS = {
     "text": (220, 220, 220), "ui_bg": (15, 15, 20),
     "menu_bg": (40, 40, 50), "menu_hover": (70, 70, 90), "menu_border": (150, 150, 150),
     "title": (255, 215, 0), "stamina": (100, 255, 100), "focus": (200, 100, 255),
-    "warning": (255, 200, 0), "danger": (255, 50, 50)
+    "warning": (255, 200, 0), "danger": (255, 50, 50), "gold": (218, 165, 32)
 }
 
 font = pygame.font.SysFont("consolas", 16)
@@ -143,6 +143,7 @@ def generate_menu_options(target, player, page="main"):
             if "hostile" in target.get("tags", []) and "dead" not in target.get("tags", []): options.append("Attack")
             if "item" in target.get("tags", []) or "dead" in target.get("tags", []): options.append("Loot")
             if "container" in target.get("tags", []): options.append("Open")
+            if "story_seed" in target.get("tags", []): options.append("[Investigate]")
         for skill in learned_skills:
             if skill in valid_actions: options.append(skill)
         stat_actions = []
@@ -173,6 +174,15 @@ def draw_main_menu():
 
 def draw_tactical_screen(map_data, cam_x, cam_y):
     screen.fill(COLORS["bg"]); draw_grid(); draw_entities(map_data, cam_x, cam_y); draw_context_menu()
+    
+    # THE IMMERSIVE QUEST TRACKER
+    campaign = map_data.get("meta", {}).get("campaign_tracker", {})
+    deck = campaign.get("active_quest_deck", [])
+    if deck:
+        current_objective = campaign.get("active_subplot", "Unknown Objective")
+        ui_manager.draw_text(screen, f"OBJECTIVE: {current_objective}", 
+                             20, 20, font, COLORS["gold"])
+    
     pygame.draw.rect(screen, COLORS["ui_bg"], (0, WINDOW_HEIGHT - UI_HEIGHT, WINDOW_WIDTH, UI_HEIGHT))
     pygame.draw.line(screen, (100, 100, 100), (0, WINDOW_HEIGHT - UI_HEIGHT), (WINDOW_WIDTH, WINDOW_HEIGHT - UI_HEIGHT), 2)
     draw_text_wrapped(screen, status_text, COLORS["text"], pygame.Rect(15, WINDOW_HEIGHT - UI_HEIGHT + 15, (WINDOW_WIDTH - LOG_WIDTH) - 30, UI_HEIGHT - 30), font)
@@ -321,6 +331,9 @@ def main():
                                             elif sel == "Move Here": res = engine.execute_move(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Area": res = engine.execute_examine_area(p_id, context_menu["target_pos"][0], context_menu["target_pos"][1])
                                             elif sel == "Examine Self": res = engine.execute_examine(p_id, p_id)
+                                            elif sel == "[Investigate]":
+                                                status_text = "Director: [Thinking...]"; draw_tactical_screen(map_data, cam_x, cam_y); pygame.display.flip()
+                                                res = engine.investigate_seed(p_id, t_id)
                                             elif sel.startswith("["): res = engine.execute_stat_action(p_id, t_id, sel)
                                             elif sel in player.get("skills", []): res = engine.execute_skill_action(p_id, t_id, sel)
                                             else: res = "Unknown command."

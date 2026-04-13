@@ -58,7 +58,14 @@ def start_new_game():
         except: time.sleep(0.01)
     
     if not state: state = {"entities": [], "meta": {"clock": 0, "global_pos": [0,0]}, "combat_log": []}
-    state.setdefault("meta", {})["clock"] = 0 
+    meta = state.setdefault("meta", {})
+    meta["clock"] = 0 
+    meta["campaign_tracker"] = {
+        "main_plot": "Hunting the bandits who burned your village.",
+        "active_subplot": None,
+        "quest_history": [],
+        "active_quest_deck": []
+    }
     state.setdefault("combat_log", ["Director: Welcome to Shatterlands."])
     player = next((e for e in state["entities"] if e["type"] == "player"), None)
     if player: entities.refresh_beats(player)
@@ -505,6 +512,40 @@ def resolve_skill_tags(actor, target, skill_data, state):
 
     if not result_parts: result_parts.append(f"Effect triggered")
     return ", ".join(result_parts)
+
+import quest_manager
+
+def investigate_seed(actor_id, target_id):
+    """
+    Triggers the Narrative Weaver to generate a quest card deck from a Story Seed.
+    """
+    state = load_state()
+    actor = next((e for e in state.get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    target = next((e for e in state.get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
+    
+    if not target or "story_seed" not in target.get("tags", []):
+        return "Nothing special here."
+
+    log_message(f"🔍 {actor['name']} investigates the {target['name']}...")
+    
+    # CALL THE WEAVER
+    weaver_data = quest_manager.generate_story_glue(target["name"], state)
+    deck = quest_manager.build_mechanical_deck(weaver_data, region_threat_level=1)
+    
+    # UPDATE CAMPAIGN
+    tracker = state["meta"].setdefault("campaign_tracker", {})
+    tracker["active_quest_deck"] = deck
+    if not tracker.get("active_subplot"):
+        tracker["active_subplot"] = weaver_data["story_hook"]
+        
+    log_message(f"📜 QUEST ACCEPTED: {weaver_data['story_hook']}")
+    
+    # CONSUME THE SEED
+    target["tags"].remove("story_seed")
+    if "used_seed" not in target["tags"]: target["tags"].append("used_seed")
+    
+    save_state(state)
+    return "Quest started."
 
 def execute_transition(dest_x, dest_y):
     state = load_state()

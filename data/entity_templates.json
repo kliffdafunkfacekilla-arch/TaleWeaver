@@ -14,6 +14,8 @@
   "pine_tree": { "name": "Towering Pine", "type": "prop", "hp": 20, "tags": ["wood", "flammable", "solid"] },
   "berry_bush": { "name": "Berry Bush", "type": "prop", "hp": 5, "tags": ["plant", "forageable", "solid"] },
   "toxic_spores": { "name": "Toxic Spore Pod", "type": "prop", "hp": 2, "tags": ["plant", "poisonous", "fragile"] },
+  "wrecked_sump_cart": { "name": "Wrecked Sump-Cart", "type": "prop", "hp": 20, "tags": ["wood", "broken", "story_seed", "solid"] },
+  "bloody_satchel": { "name": "Bloody Satchel", "type": "prop", "hp": 5, "tags": ["cloth", "leather", "story_seed"] },
 
   "bandit_thug": { 
     "name": "Desperate Bandit", "type": "hostile", "hp": 15, "species": "Human",

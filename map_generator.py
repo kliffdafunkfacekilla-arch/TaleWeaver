@@ -110,5 +110,15 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
                     e = template.copy(); e["id"] = f"quest_{random.randint(1000, 9999)}"; e["pos"] = inj_entity["guaranteed_pos"]
                     map_state["entities"].append(e)
 
+    # --- INJECT STORY SEED ---
+    seed_type = random.choice(["wrecked_sump_cart", "bloody_satchel"])
+    seed_tmpl = templates.get(seed_type)
+    if seed_tmpl:
+        s = seed_tmpl.copy()
+        s["id"] = f"seed_{random.randint(1000, 9999)}"
+        # Find a walkable spot near the center
+        s["pos"] = [random.randint(20, 30), random.randint(20, 30)]
+        map_state["entities"].append(s)
+
     with open("local_map_state.json", "w", encoding="utf-8") as f: json.dump(map_state, f, indent=2)
     return True

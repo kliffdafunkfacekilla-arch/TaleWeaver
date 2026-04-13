@@ -1,4 +1,4 @@
-﻿import json
+import json
 import random
 
 def load_json(filepath):
@@ -29,9 +29,11 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
         player_data["pos"] = entry_pos
         map_state["entities"].append(player_data)
     else:
-        # THE NEW OSTRAKA CHASSIS!
+        # THE NEW OSTRAKA CHASSIS (Stat-Logic 2.0)
         new_player = {
             "id": "char_01", "name": "Captain Jax", "type": "player", "pos": entry_pos,
+            "species": "Human",
+            "tracks": {"offense": "Might", "defense": "Reflexes"},
             "hp": 20, "max_hp": 20, "composure": 15, "max_composure": 15,
             "resources": {"stamina": 10, "max_stamina": 10, "focus": 10, "max_focus": 10},
             "stats": {
@@ -40,6 +42,7 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None):
             },
             "equipment": {"weapon": "Heavy Boarding Hook", "armor": "Leather River-Coat", "accessory": "Aether-Compass"},
             "inventory": ["Torch", "Bandage", "Bottle of Fir-Gin"],
+            "skills": ["Grapple/Throw", "Calculated Trap", "Armor Crack"],
             "tags": ["player", "flesh", "river_folk", "biped", "amphibious", "whisker-sense"]
         }
         map_state["entities"].append(new_player)

@@ -1,0 +1,663 @@
+{
+  "local_map_state": {
+    "environment": "You are in Frostpeak Tundra. The weather is light_snow.",
+    "entities": [
+      {
+        "id": "char_01",
+        "name": "Captain Jax",
+        "type": "player",
+        "pos": [
+          25,
+          25
+        ],
+        "species": "Human",
+        "tracks": {
+          "offense": "Might",
+          "defense": "Reflexes"
+        },
+        "hp": 20,
+        "max_hp": 20,
+        "composure": 15,
+        "max_composure": 15,
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10,
+          "beats": {
+            "move": 1,
+            "stamina": 1,
+            "focus": 1
+          }
+        },
+        "stats": {
+          "Might": 4,
+          "Endurance": 5,
+          "Reflexes": 3,
+          "Finesse": 2,
+          "Vitality": 4,
+          "Fortitude": 5,
+          "Knowledge": 3,
+          "Logic": 2,
+          "Awareness": 6,
+          "Intuition": 5,
+          "Charm": 2,
+          "Willpower": 4
+        },
+        "equipment": {
+          "weapon": "Heavy Boarding Hook",
+          "armor": "Leather River-Coat",
+          "accessory": "Aether-Compass"
+        },
+        "inventory": [
+          "Torch",
+          "Bandage",
+          "Bottle of Fir-Gin"
+        ],
+        "skills": [
+          "Grapple/Throw",
+          "Calculated Trap",
+          "Armor Crack"
+        ],
+        "tags": [
+          "player",
+          "flesh",
+          "river_folk",
+          "biped",
+          "amphibious",
+          "whisker-sense"
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_1265",
+        "pos": [
+          31,
+          35
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_8363",
+        "pos": [
+          31,
+          33
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_3871",
+        "pos": [
+          33,
+          33
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_3350",
+        "pos": [
+          31,
+          37
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_1620",
+        "pos": [
+          44,
+          34
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_1696",
+        "pos": [
+          43,
+          33
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_5183",
+        "pos": [
+          43,
+          33
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_4146",
+        "pos": [
+          47,
+          35
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_4070",
+        "pos": [
+          45,
+          38
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_2126",
+        "pos": [
+          48,
+          34
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_8945",
+        "pos": [
+          46,
+          38
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_6644",
+        "pos": [
+          27,
+          25
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_4550",
+        "pos": [
+          27,
+          29
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_8513",
+        "pos": [
+          29,
+          28
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_7806",
+        "pos": [
+          24,
+          29
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_2130",
+        "pos": [
+          25,
+          28
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_1607",
+        "pos": [
+          23,
+          28
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_9547",
+        "pos": [
+          47,
+          11
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_3179",
+        "pos": [
+          46,
+          12
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_1797",
+        "pos": [
+          44,
+          15
+        ]
+      },
+      {
+        "name": "Bloody Satchel",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "cloth",
+          "leather",
+          "story_seed"
+        ],
+        "id": "seed_3133",
+        "pos": [
+          22,
+          21
+        ]
+      }
+    ],
+    "latest_action": {},
+    "ai_directive": ""
+  },
+  "meta": {
+    "global_pos": [
+      0,
+      0
+    ],
+    "region_id": "frostpeak_tundra",
+    "map_name": "Frostpeak Tundra",
+    "grid_size": [
+      15,
+      15
+    ],
+    "map_tags": [
+      "tundra",
+      "freezing",
+      "snowy",
+      "barren",
+      "light_snow"
+    ],
+    "current_map_id": "overworld_default",
+    "active_interior_deck": [],
+    "campaign_tracker": {
+      "main_plot": "Hunting the bandits who burned your village.",
+      "active_subplot": null,
+      "quest_history": [],
+      "active_quest_deck": [],
+      "map_history_stack": []
+    },
+    "room_type": "tavern_main",
+    "in_combat": false
+  },
+  "combat_log": [
+    "Director: Welcome to Shatterlands."
+  ]
+}

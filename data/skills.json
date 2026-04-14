@@ -1,0 +1,732 @@
+{
+  "passives": {
+    "Assault": {
+      "Might": {
+        "name": "Imposing Weapons",
+        "tiers": {
+          "1": { "name": "Drive Back", "effect": "Free 1-space push on hit.", "tags": ["push"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Cleave", "effect": "Adjacent enemy takes half damage.", "tags": ["aoe", "cleave"] },
+          "4": { "name": "Crushing Weight", "effect": "Ignores Shield/Braced armor mods.", "tags": ["bypass_armor"] },
+          "5": { "name": "The Wall", "effect": "Free strike when enemy enters melee.", "tags": ["reaction", "aoo"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Sunder", "effect": "Applies [Broken Armor].", "tags": ["apply_status", "broken_armor"] },
+          "8": { "name": "Momentum", "effect": "Kill grants +1 S-Die and free strike.", "tags": ["resource_restore", "free_action"] },
+          "9": { "name": "Unstoppable Force", "effect": "Strikes cannot be dodged/parried.", "tags": ["unavoidable"] }
+        }
+      },
+      "Endurance": {
+        "name": "Defending Weapons",
+        "tiers": {
+          "1": { "name": "Shield-Bash", "effect": "+1 to next Defense roll after striking.", "tags": ["defense_buff"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Iron Turtle", "effect": "Strike and Defend in the same Beat.", "tags": ["action_efficiency"] },
+          "4": { "name": "Relentless", "effect": "Ignore exhaustion/injury penalties.", "tags": ["resilience"] },
+          "5": { "name": "Intercept", "effect": "Redirect adjacent ally's attack to yourself.", "tags": ["tank", "protection"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Exhaust", "effect": "Applies [Winded].", "tags": ["apply_status", "winded"] },
+          "8": { "name": "Hold the Line", "effect": "Blocking for an ally grants free Action Beat.", "tags": ["resource_restore"] },
+          "9": { "name": "Inevitable", "effect": "Strikes never suffer Disadvantage.", "tags": ["consistency"] }
+        }
+      },
+      "Finesse": {
+        "name": "Precision Weapons",
+        "tiers": {
+          "1": { "name": "Lunge", "effect": "+1 space Strike reach.", "tags": ["reach"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Surgical Flurry", "effect": "Free second strike against distracted/flanked enemy.", "tags": ["multi_attack"] },
+          "4": { "name": "Armor Piercing", "effect": "Ignores Fortress/Reinforced armor mods.", "tags": ["bypass_armor"] },
+          "5": { "name": "Punish", "effect": "Free strike against enemy that misses you.", "tags": ["reaction", "counter"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Hamstring", "effect": "Applies [Severed] to targeted limb.", "tags": ["apply_status", "severed"] },
+          "8": { "name": "The Dissection", "effect": "Applying a Status Tag grants free Move Beat.", "tags": ["action_economy"] },
+          "9": { "name": "Internal Strike", "effect": "Bypasses physical armor completely.", "tags": ["armor_negation"] }
+        }
+      },
+      "Reflex": {
+        "name": "Quick Weapons",
+        "tiers": {
+          "1": { "name": "Quick-Step", "effect": "Free 1-space move before/after Strike.", "tags": ["mobility_strike"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Follow-Through", "effect": "Hit grants free strike on secondary adjacent target.", "tags": ["aoe", "multi_attack"] },
+          "4": { "name": "Find the Gap", "effect": "Ignores 2 points of physical Armor Mod.", "tags": ["penetration"] },
+          "5": { "name": "Riposte", "effect": "Free strike against missed/Clash-lost attacker.", "tags": ["reaction", "counter"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Artery Sever", "effect": "Two hits in one round applies [Bleeding] and [Slowed].", "tags": ["apply_status", "composite"] },
+          "8": { "name": "Momentum State", "effect": "Kill restores 1 S-Die and grants free Move Beat.", "tags": ["resource_restore"] },
+          "9": { "name": "Blinding Speed", "effect": "Strikes cannot be parried/blocked; Advantage vs. enemies who haven't acted.", "tags": ["unavoidable", "initiative"] }
+        }
+      },
+      "Vitality": {
+        "name": "Bio Weapons",
+        "tiers": {
+          "1": { "name": "Predator's Latch", "effect": "Unarmed deals lethal damage; auto-initiates Grapple on hit.", "tags": ["unarmed", "control"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Frenzy", "effect": "Striking grappled target grants free secondary bite/claw.", "tags": ["grapple_synergy"] },
+          "4": { "name": "Primal Force", "effect": "Ignores non-metal armor mods.", "tags": ["penetration"] },
+          "5": { "name": "Blood-Drunk", "effect": "Free retaliatory strike when taking HP damage.", "tags": ["reaction", "thorns"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Maim", "effect": "Applies [Infected] or [Maimed].", "tags": ["apply_status", "debff"] },
+          "8": { "name": "The Feast", "effect": "Kill restores 1 HP and 1 S-Die.", "tags": ["vampiric"] },
+          "9": { "name": "Apex Predator", "effect": "Unarmed strikes treat all targets as 0 physical armor.", "tags": ["armor_negation"] }
+        }
+      },
+      "Fortitude": {
+        "name": "Disciplined Weapons",
+        "tiers": {
+          "1": { "name": "Demolition", "effect": "Double damage against inanimate objects/cover.", "tags": ["structural_damage"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Follow-Through", "effect": "Excess damage from breaking cover hits enemy behind it.", "tags": ["penetration", "cleave"] },
+          "4": { "name": "Armor Cracker", "effect": "Ignores Hardened/Resistant tags.", "tags": ["bypass_tags"] },
+          "5": { "name": "Punishing Blow", "effect": "Blocked strikes deal severe structural damage to enemy shield/weapon.", "tags": ["disarm_utility"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Structural Collapse", "effect": "Applies [Sundered], permanently breaking gear.", "tags": ["apply_status", "gear_break"] },
+          "8": { "name": "The Wrecking Ball", "effect": "Destroying cover/armor grants free Strike.", "tags": ["resource_restore"] },
+          "9": { "name": "The Siege Engine", "effect": "Treats all physical structures as [Brittle].", "tags": ["duality_exploit"] }
+        }
+      },
+      "Knowledge": {
+        "name": "Clever Weapons",
+        "tiers": {
+          "1": { "name": "Exploit Flaw", "effect": "Advantage vs. enemies with Status Tags.", "tags": ["synergy"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Collateral", "effect": "Bounce effect to secondary adjacent target for half damage.", "tags": ["aoe", "richochet"] },
+          "4": { "name": "Bypass Ward", "effect": "Ignores Scholar/Ceremonial armor mods.", "tags": ["anomaly_penetration"] },
+          "5": { "name": "Counter-Measure", "effect": "Free strike against enemy attempting to cast a spell.", "tags": ["mage_slayer", "reaction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Nullify", "effect": "Applies [Silenced].", "tags": ["apply_status", "silence"] },
+          "8": { "name": "The Epiphany", "effect": "Breaking armor or killing grants 1 F-Die and free Action Beat.", "tags": ["resource_restore"] },
+          "9": { "name": "Omniscience", "effect": "Strikes auto-hit mundane enemies without rolling.", "tags": ["unavoidable"] }
+        }
+      },
+      "Logic": {
+        "name": "Calculated Weapons",
+        "tiers": {
+          "1": { "name": "The Angle", "effect": "Ranged strikes ignore Half/Three-Quarters Cover.", "tags": ["cover_ignore"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Geometric Arc", "effect": "Target unseen enemies via ricochet.", "tags": ["indirect_fire"] },
+          "4": { "name": "Surgical", "effect": "Ignores defensive bonuses of Static/Braced enemies.", "tags": ["lock_bypass"] },
+          "5": { "name": "Overwatch", "effect": "Free strike when enemy enters optimal range.", "tags": ["reaction", "zone_control"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Pinning Strike", "effect": "Applies [Immobilized].", "tags": ["apply_status", "cc"] },
+          "8": { "name": "The Domino Effect", "effect": "Triggering a trap or dropping a target grants free Strike.", "tags": ["chain_reaction"] },
+          "9": { "name": "Inevitable Trajectory", "effect": "Zero penalties for extreme distance/weather.", "tags": ["perfect_accuracy"] }
+        }
+      },
+      "Awareness": {
+        "name": "Accurate Weapons",
+        "tiers": {
+          "1": { "name": "Eagle Eye", "effect": "+1 Zone to effective range.", "tags": ["range_buff"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Suppressive Fire", "effect": "Split strike; no damage, but two enemies lose Move Beats.", "tags": ["debuff", "cc"] },
+          "4": { "name": "Piercing Vision", "effect": "Ignores Concealing armor and [Hidden].", "tags": ["scrying"] },
+          "5": { "name": "Skeet Shooter", "effect": "Reaction to shoot non-magical projectiles out of the air.", "tags": ["active_defense", "reaction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Pinpoint", "effect": "Applies [Exposed].", "tags": ["apply_status", "exposed"] },
+          "8": { "name": "The One Shot", "effect": "Kill from 1+ Zone away restores 1 F-Die and 1 S-Die.", "tags": ["resource_restore"] },
+          "9": { "name": "Horizon Strike", "effect": "Uninterrupted line of sight equals full power strike.", "tags": ["extreme_range"] }
+        }
+      },
+      "Intuition": {
+        "name": "Lucky Weapons",
+        "tiers": {
+          "1": { "name": "Wild Swing", "effect": "Crit range is 19-20.", "tags": ["crit_chance"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Happy Accident", "effect": "Missed strike auto-rolls against secondary target.", "tags": ["reliability"] },
+          "4": { "name": "Blind Luck", "effect": "Ignores penalties from Blinded/Obscured/Confused.", "tags": ["chaos_ignore"] },
+          "5": { "name": "Jinx", "effect": "Force enemy to reroll a successful hit on an ally.", "tags": ["reroll", "reaction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Cursed Wound", "effect": "Applies [Jinxed], -1d4 to next roll.", "tags": ["apply_status", "jinxed"] },
+          "8": { "name": "The Jackpot", "effect": "Natural 20 restores 1 F-Die and grants free Action Beat.", "tags": ["crit_reward"] },
+          "9": { "name": "Russian Roulette", "effect": "Immune to Crit Fails; Crit range expands to 18-20.", "tags": ["crit_mastery"] }
+        }
+      },
+      "Charm": {
+        "name": "Commanding Weapons",
+        "tiers": {
+          "1": { "name": "Flourish", "effect": "+1 space melee reach.", "tags": ["reach"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "The Sweep", "effect": "Target up to 3 enemies; no damage, but knocked [Prone].", "tags": ["cc", "aoe"] },
+          "4": { "name": "Distracting Arc", "effect": "Ignores Shield bonuses.", "tags": ["feint"] },
+          "5": { "name": "The Disarm", "effect": "Reaction to rip weapon away on missed enemy melee.", "tags": ["disarm", "reaction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Humiliate", "effect": "Applies [Enraged] or [Distracted].", "tags": ["apply_status", "mental_debuff"] },
+          "8": { "name": "The Applause", "effect": "Disarming/tripping/killing restores 1 F-Die and free Move Beat.", "tags": ["action_economy"] },
+          "9": { "name": "Puppet Master", "effect": "Successful strikes force target to move 1 space anywhere.", "tags": ["repositioning"] }
+        }
+      },
+      "Willpower": {
+        "name": "Dominating Weapons",
+        "tiers": {
+          "1": { "name": "The Verdict", "effect": "+1 Damage vs wounded/unarmored enemies.", "tags": ["execute"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Wide Sweep", "effect": "Auto-hit secondary adjacent enemy for full damage.", "tags": ["cleave", "efficiency"] },
+          "4": { "name": "Overwhelming Presence", "effect": "Ignores Resistant/Hardened of physically smaller enemies.", "tags": ["intimidation"] },
+          "5": { "name": "Kneel", "effect": "Reaction to knock missed attacker [Prone].", "tags": ["cc", "reaction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Broken Will", "effect": "Applies [Terrified], dealing Composure damage.", "tags": ["apply_status", "fear"] },
+          "8": { "name": "The Execution", "effect": "Kill restores 1 F-Die and free Strike.", "tags": ["reset"] },
+          "9": { "name": "Absolute Decree", "effect": "Struck enemies lose Reaction and Move Beats for the round.", "tags": ["stun_command"] }
+        }
+      }
+    },
+    "Aegis": {
+      "Might": {
+        "name": "Braced Armor",
+        "tiers": {
+          "1": { "name": "Planted", "effect": "+1 Defense if 0 Move Beats spent.", "tags": ["defense_buff"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "The Bulwark", "effect": "Allies behind you have Full Cover.", "tags": ["protection", "cover"] },
+          "4": { "name": "Rooted", "effect": "Immune to Pushed/Pulled/Prone.", "tags": ["stability"] },
+          "5": { "name": "Recoil", "effect": "Attackers failing to deal 3+ damage take 1 recoil.", "tags": ["thorns"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Jarring Halt", "effect": "Attackers gain [Numb].", "tags": ["apply_status", "numb"] },
+          "8": { "name": "Unbroken", "effect": "Surviving 5+ damage grants +1 S-Die and Action Beat.", "tags": ["survival_reward"] },
+          "9": { "name": "Immovable Object", "effect": "Cannot be moved by non-magical force.", "tags": ["immovable"] }
+        }
+      },
+      "Endurance": {
+        "name": "Fortress Armor",
+        "tiers": {
+          "1": { "name": "Deflect", "effect": "Reduce incoming physical damage by 1.", "tags": ["damage_reduction"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Walking Bunker", "effect": "No movement penalty for encumbrance/dragging.", "tags": ["strength_mobility"] },
+          "4": { "name": "Reinforced", "effect": "Immune to Critical Hit multipliers.", "tags": ["crit_immune"] },
+          "5": { "name": "Shatter-Point", "effect": "Missed ranged physical attacks shatter.", "tags": ["ricochet_prevention"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "The Anvil", "effect": "Enemies tying a Clash automatically lose.", "tags": ["clash_advantage"] },
+          "8": { "name": "Last Stand", "effect": "Dropping to 1 HP restores 1 S-Die and Action Beat.", "tags": ["emergency"] },
+          "9": { "name": "The Living Wall", "effect": "Immune to Bleeding and Pierced.", "tags": ["biological_protection"] }
+        }
+      },
+      "Finesse": {
+        "name": "Agile Armor",
+        "tiers": {
+          "1": { "name": "Contortion", "effect": "Move through enemy spaces without penalty.", "tags": ["mobility"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Fluid Guard", "effect": "Move Beat and Defend action in the same Beat.", "tags": ["efficiency"] },
+          "4": { "name": "Slippery", "effect": "Ignores Grappled/Restrained tags.", "tags": ["unbound"] },
+          "5": { "name": "Shadow-Step", "effect": "Free 1-space shift when enemy enters melee.", "tags": ["reaction_move"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Overcommit", "effect": "Enemies missing you gain [Exposed].", "tags": ["trap", "exposed"] },
+          "8": { "name": "The Ghost", "effect": "Dodging a Crit grants free Action Beat.", "tags": ["crit_reward"] },
+          "9": { "name": "Weightless", "effect": "Never trigger physical traps/pressure plates.", "tags": ["sensor_immune"] }
+        }
+      },
+      "Reflex": {
+        "name": "Mobile Armor",
+        "tiers": {
+          "1": { "name": "The Slip", "effect": "Free 1-Zone shift after successful defense/Clash tie.", "tags": ["mobility"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Sure-Footed", "effect": "Ignore Difficult/Slick/Unstable terrain penalties.", "tags": ["stability"] },
+          "4": { "name": "Ghost-Step", "effect": "Immune to Attacks of Opportunity.", "tags": ["safe_move"] },
+          "5": { "name": "Fluid Escape", "effect": "Clash ties auto-succeed on Disengage.", "tags": ["clash_safety"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost. Sprint/Dash costs 0 Stamina.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Overextend", "effect": "Enemy Crit Fails knock them [Prone] and [Off-Balance].", "tags": ["punish"] },
+          "8": { "name": "Kinetic Battery", "effect": "Moving 2+ Zones restores 1 S-Die.", "tags": ["resource_restore"] },
+          "9": { "name": "Untouchable", "effect": "First physical attack against you each round automatically misses.", "tags": ["perfect_dodge"] }
+        }
+      },
+      "Vitality": {
+        "name": "Organic Armor",
+        "tiers": {
+          "1": { "name": "Rapid Clotting", "effect": "Regen 1 HP at end of round if damaged.", "tags": ["regen"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Adrenaline Surge", "effect": "Ignore movement/action penalties from injuries.", "tags": ["resilience"] },
+          "4": { "name": "Iron Gut", "effect": "Immune to Poisoned/Diseased.", "tags": ["immunity"] },
+          "5": { "name": "Shed Skin", "effect": "Halve incoming Crit damage; Armor Mod drops to 0.", "tags": ["damage_reduction"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "Toxic Carapace", "effect": "Grapplers take automatic acid/spine damage.", "tags": ["thorns"] },
+          "8": { "name": "The Rebirth", "effect": "Healing to Max HP grants free Action Beat.", "tags": ["health_reward"] },
+          "9": { "name": "Unkillable", "effect": "Cannot bleed out; automatically stabilize at 0 HP.", "tags": ["immortality"] }
+        }
+      },
+      "Fortitude": {
+        "name": "Reinforced Armor",
+        "tiers": {
+          "1": { "name": "Insulated", "effect": "Ignore first 2 points of env/elemental damage.", "tags": ["elemental_res"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 S-Die Cost.", "tags": ["efficiency_s"] },
+          "3": { "name": "Hazard-Walker", "effect": "Moving through Fire/Acid/Hazards costs 0 extra.", "tags": ["env_immunity"] },
+          "4": { "name": "Thermal Plating", "effect": "Immune to Burn and Frozen.", "tags": ["temp_immunity"] },
+          "5": { "name": "Slag", "effect": "Metal melee weapons hitting you take heat/acid damage.", "tags": ["gear_break"] },
+          "6": { "name": "Master Loadout", "effect": "-2 S-Die Cost.", "tags": ["efficiency_s_master"] },
+          "7": { "name": "The Furnace", "effect": "Enemies starting turn in melee gain [Overheated].", "tags": ["aura"] },
+          "8": { "name": "Thermal Battery", "effect": "Absorbing elemental damage grants free Action Beat.", "tags": ["conversion"] },
+          "9": { "name": "The Forge", "effect": "Immune to all non-magical elemental damage.", "tags": ["godhood"] }
+        }
+      },
+      "Knowledge": {
+        "name": "Scholar Armor",
+        "tiers": {
+          "1": { "name": "Warded", "effect": "Reduce incoming Anomaly damage by 1.", "tags": ["anomaly_res"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Read the Room", "effect": "Identify all traps/magical hazards for free.", "tags": ["scrying"] },
+          "4": { "name": "Grounded", "effect": "Immune to magical Pushed/Pulled/Teleported.", "tags": ["arcane_stability"] },
+          "5": { "name": "Feedback Loop", "effect": "Enemy spell misses deal 1 Composure damage to attacker.", "tags": ["arcane_thorns"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Mental Fortress", "effect": "Melee attackers gain [Confused].", "tags": ["apply_status", "trauma"] },
+          "8": { "name": "Data Absorption", "effect": "Defending Anomaly attack restores 1 F-Die.", "tags": ["conversion"] },
+          "9": { "name": "The Blank Page", "effect": "Immune to all Anomaly-generated Status Tags.", "tags": ["purity"] }
+        }
+      },
+      "Logic": {
+        "name": "Protective Armor",
+        "tiers": {
+          "1": { "name": "Deflecting Angle", "effect": "+1 Defense vs Ranged if moving 1+ space.", "tags": ["ranged_defense"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Clockwork Step", "effect": "Move Beat and Defend in the same Beat.", "tags": ["efficiency"] },
+          "4": { "name": "Vital Guard", "effect": "Immune to Bleeding and enemy Crit multipliers.", "tags": ["vital_protection"] },
+          "5": { "name": "Calculated Retreat", "effect": "Clash ties auto-succeed on Disengage.", "tags": ["tactical_safety"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Overextend", "effect": "Enemies rolling 5 or less fall [Prone].", "tags": ["punish"] },
+          "8": { "name": "Perfect Algorithm", "effect": "Dodging by 5+ points grants free Action Beat.", "tags": ["perfect_execution"] },
+          "9": { "name": "Untouchable Equation", "effect": "Zero damage from AoE attacks if safe square exists.", "tags": ["aoe_immunity"] }
+        }
+      },
+      "Awareness": {
+        "name": "Concealing Armor",
+        "tiers": {
+          "1": { "name": "Meld", "effect": "+1 Defense if adjacent to cover/object.", "tags": ["stealth_buff"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Shadow-Walk", "effect": "Sprint without stealth penalties/noise.", "tags": ["stealth_mobility"] },
+          "4": { "name": "Unseen", "effect": "Immune to Illuminated/Marked/Scrying.", "tags": ["anti_scry"] },
+          "5": { "name": "Vanish", "effect": "Free Move Beat to gain [Hidden] if missed.", "tags": ["reset"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Paranoia", "effect": "Missed attackers gain [Doubtful] and Composure damage.", "tags": ["mental_thorns"] },
+          "8": { "name": "The Ghost", "effect": "Gaining [Hidden] grants free Action Beat.", "tags": ["flow"] },
+          "9": { "name": "True Invisibility", "effect": "Cannot be targeted by mundane enemies.", "tags": ["perfect_stealth"] }
+        }
+      },
+      "Intuition": {
+        "name": "Tribal Armor",
+        "tiers": {
+          "1": { "name": "Sixth Sense", "effect": "+2 Defense during Round 1.", "tags": ["initiative_buff"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Warning Whispers", "effect": "Immune to Surprise; act in Ambushes.", "tags": ["ambush_immune"] },
+          "4": { "name": "Charmed Life", "effect": "Immune to Cursed/Jinxed/Doomed.", "tags": ["luck"] },
+          "5": { "name": "Dumb Luck", "effect": "Reaction to trip charging enemies.", "tags": ["reaction", "cc"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Bad Karma", "effect": "Enemies damaging you gain [Jinxed].", "tags": ["thorns"] },
+          "8": { "name": "Cheating Death", "effect": "Dropping to 1 HP restores 1 Action Beat.", "tags": ["survival"] },
+          "9": { "name": "Probability Shield", "effect": "Coin flip on incoming attacks to auto-fail them.", "tags": ["chaos_protection"] }
+        }
+      },
+      "Charm": {
+        "name": "Ornate Armor",
+        "tiers": {
+          "1": { "name": "Dazzle", "effect": "+1 Defense in bright light/open space.", "tags": ["distraction"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "Center of Attention", "effect": "Move through enemy spaces without Reactions.", "tags": ["mobility"] },
+          "4": { "name": "Untouchable Ego", "effect": "Immune to Intimidated/Terrified/Shamed.", "tags": ["ego"] },
+          "5": { "name": "The Parry", "effect": "Reaction to redirect attack to adjacent enemy.", "tags": ["parry", "rebound"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Awe", "effect": "Missed attackers gain [Hesitant].", "tags": ["auras"] },
+          "8": { "name": "The Encore", "effect": "Defending Boss/Crit restores 1 F-Die.", "tags": ["reward"] },
+          "9": { "name": "Plot Armor", "effect": "Mundane enemies cannot target you unless lone target.", "tags": ["perfect_defense"] }
+        }
+      },
+      "Willpower": {
+        "name": "Ceremonial Armor",
+        "tiers": {
+          "1": { "name": "Unyielding", "effect": "+2 Defense vs Anomaly/Psychic.", "tags": ["mental_res"] },
+          "2": { "name": "Loadout Efficiency", "effect": "-1 F-Die Cost.", "tags": ["efficiency_f"] },
+          "3": { "name": "March of Law", "effect": "Ignore movement penalties moving toward enemy.", "tags": ["charge"] },
+          "4": { "name": "Iron Mind", "effect": "Immune to Charmed/Controlled/Sleep.", "tags": ["purity"] },
+          "5": { "name": "Rebuke", "effect": "Enemies hitting you in melee take 1 Composure damage.", "tags": ["thorns"] },
+          "6": { "name": "Master Loadout", "effect": "-2 F-Die Cost.", "tags": ["efficiency_f_master"] },
+          "7": { "name": "Guilt", "effect": "Attackers gain [Doubtful].", "tags": ["auras"] },
+          "8": { "name": "The Martyr", "effect": "Surviving 5+ damage restores 1 F-Die.", "tags": ["sacrifice"] },
+          "9": { "name": "Divine Right", "effect": "While stationary, cannot be reduced below 1 HP.", "tags": ["immortality"] }
+        }
+      }
+    }
+  },
+  "tactics": {
+    "Might": {
+      "name": "The Wrangler",
+      "governing_stat": "Might",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Grapple/Throw", "cost": {"primary": 1, "secondary": 0}, "effect": "Damage and push/pull 1 Zone.", "passive": "Immune to disarm." },
+        "2": { "name": "Leverage", "cost": {"primary": 1, "secondary": 0}, "effect": "Tip statues or stop cavalry.", "passive": null },
+        "3": { "name": "The Toss", "cost": {"primary": 2, "secondary": 0}, "effect": "Thrown enemies gain [Off-Balance].", "passive": null },
+        "4": { "name": "Momentum Transfer", "cost": {"primary": 2, "secondary": 0}, "effect": "Throw allies safely or catch falling boulders.", "passive": null },
+        "5": { "name": "Massive Carrying", "cost": {"primary": 3, "secondary": 0}, "effect": "Push massive boundaries.", "passive": "Ignore penalties for dragging massive loads." },
+        "6": { "name": "Slam Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Targets fall [Prone] and -1 Armor Mod." },
+        "7": { "name": "Mythic Heave", "cost": {"primary": 4, "secondary": 1}, "effect": "Suplex a dragon or shatter a watchtower.", "passive": null },
+        "8": { "name": "Wrangler Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when throwing into hazard." },
+        "9": { "name": "Orbital Drop", "cost": {"primary": 5, "secondary": 2}, "effect": "Launch high and drive into earth. [Maims] target.", "passive": null }
+      }
+    },
+    "Endurance": {
+      "name": "The Sponge",
+      "governing_stat": "Endurance",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Brace", "cost": {"primary": 1, "secondary": 0}, "effect": "Reduce incoming damage by 1.", "passive": "Immune to [Staggered]." },
+        "2": { "name": "Kinetic Anchor", "cost": {"primary": 1, "secondary": 0}, "effect": "Plant feet to become an immovable wall.", "passive": null },
+        "3": { "name": "Repel", "cost": {"primary": 2, "secondary": 0}, "effect": "Attackers dealing 0 damage shoved 1 Zone.", "passive": null },
+        "4": { "name": "Structural Lock", "cost": {"primary": 2, "secondary": 0}, "effect": "Hold collapsing ceilings indefinitely.", "passive": null },
+        "5": { "name": "Hazard Mastery", "cost": {"primary": 3, "secondary": 0}, "effect": "Endure the elements.", "passive": "Ignore first 2 points of env damage." },
+        "6": { "name": "Staysis Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Attackers gain [Fatigued]." },
+        "7": { "name": "Mythic Stasis", "cost": {"primary": 4, "secondary": 1}, "effect": "Lock biology; cannot drop below 1 HP.", "passive": null },
+        "8": { "name": "Bastion Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when blocking lethal hit." },
+        "9": { "name": "The Monolith", "cost": {"primary": 5, "secondary": 2}, "effect": "Absorb a Zone-wide catastrophic attack.", "passive": null }
+      }
+    },
+    "Finesse": {
+      "name": "The Ghost",
+      "governing_stat": "Finesse",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Surgical Strike", "cost": {"primary": 1, "secondary": 0}, "effect": "Strike + shift 1 Zone.", "passive": "Leave no tracks." },
+        "2": { "name": "The Blind Spot", "cost": {"primary": 1, "secondary": 0}, "effect": "Hide in shadows mathematically small.", "passive": null },
+        "3": { "name": "The Artery", "cost": {"primary": 2, "secondary": 0}, "effect": "Apply [Bleeding] and ignore 1 Armor Mod.", "passive": null },
+        "4": { "name": "Disarticulation", "cost": {"primary": 2, "secondary": 0}, "effect": "Slide through bars / pick lids.", "passive": null },
+        "5": { "name": "Permeability", "cost": {"primary": 3, "secondary": 0}, "effect": "Untraceable.", "passive": "No pressure plates, 0 fall damage." },
+        "6": { "name": "Ghost Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Target [Silenced] and disarmed." },
+        "7": { "name": "Mythic Slip", "cost": {"primary": 4, "secondary": 1}, "effect": "Sprint over glass/walls silently.", "passive": null },
+        "8": { "name": "Shade Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when kill from stealth." },
+        "9": { "name": "Perfect Murder", "cost": {"primary": 5, "secondary": 2}, "effect": "Silent death; body caught flawlessly.", "passive": null }
+      }
+    },
+    "Reflex": {
+      "name": "The Dervish",
+      "governing_stat": "Reflex",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Whirlwind", "cost": {"primary": 1, "secondary": 0}, "effect": "Strike + 1-space shift.", "passive": "Immune to [Slowed]." },
+        "2": { "name": "Momentum Carry", "cost": {"primary": 1, "secondary": 0}, "effect": "Run across water/walls.", "passive": null },
+        "3": { "name": "Cleave-Step", "cost": {"primary": 2, "secondary": 0}, "effect": "Strike two adjacent targets.", "passive": null },
+        "4": { "name": "Frictionless Slide", "cost": {"primary": 2, "secondary": 0}, "effect": "Slide under gates/blades.", "passive": null },
+        "5": { "name": "Kinetic Speed", "cost": {"primary": 3, "secondary": 0}, "effect": "Uncatchable.", "passive": "Advantage on Defense vs AoO." },
+        "6": { "name": "Dervish Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Hitting 3 targets applies [Off-Balance]." },
+        "7": { "name": "Mythic Speed", "cost": {"primary": 4, "secondary": 1}, "effect": "Instantly take two action beats.", "passive": null },
+        "8": { "name": "Wind Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when dropping/switching." },
+        "9": { "name": "Thousand Cuts", "cost": {"primary": 5, "secondary": 2}, "effect": "Strike every enemy in the Zone.", "passive": null }
+      }
+    },
+    "Vitality": {
+      "name": "The Medic",
+      "governing_stat": "Vitality",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Triage", "cost": {"primary": 1, "secondary": 0}, "effect": "Heal 1 HP or clear 1 Tag.", "passive": "Immune to [Diseased]/[Poisoned]." },
+        "2": { "name": "Adrenaline Injection", "cost": {"primary": 1, "secondary": 0}, "effect": "Wake ally with 1 HP.", "passive": null },
+        "3": { "name": "Combat Stitches", "cost": {"primary": 2, "secondary": 0}, "effect": "Target gains +1 Armor Mod.", "passive": null },
+        "4": { "name": "Bone-Set", "cost": {"primary": 2, "secondary": 0}, "effect": "Cure Major physical limb injury.", "passive": null },
+        "5": { "name": "Blood-Sense", "cost": {"primary": 3, "secondary": 0}, "effect": "Biological intuition.", "passive": "Know HP/injuries of everyone in Zone." },
+        "6": { "name": "Bio Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Allies gain free Move beat." },
+        "7": { "name": "Mythic Regeneration", "cost": {"primary": 4, "secondary": 1}, "effect": "Restart stopped hearts mid-combat.", "passive": null },
+        "8": { "name": "Pulse Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when pulling from 0 HP." },
+        "9": { "name": "Spark of Life", "cost": {"primary": 5, "secondary": 2}, "effect": "Resurrect creature at full HP.", "passive": null }
+      }
+    },
+    "Fortitude": {
+      "name": "The Sunderer",
+      "governing_stat": "Fortitude",
+      "primary_cost_type": "stamina",
+      "secondary_cost_type": "focus",
+      "tiers": {
+        "1": { "name": "Armor Crack", "cost": {"primary": 1, "secondary": 0}, "effect": "No HP damage; reduce Armor Mod by 1.", "passive": "Immune to weapon breaking." },
+        "2": { "name": "Structural Weakness", "cost": {"primary": 1, "secondary": 0}, "effect": "Shatter doors/locks with a tap.", "passive": null },
+        "3": { "name": "Shatter-Cleave", "cost": {"primary": 2, "secondary": 0}, "effect": "Crack armor of up to 3 targets.", "passive": null },
+        "4": { "name": "Demolition", "cost": {"primary": 2, "secondary": 0}, "effect": "Destroy inanimate cover regardless of HP.", "passive": null },
+        "5": { "name": "Brutilization", "cost": {"primary": 3, "secondary": 0}, "effect": "Exploit breakage.", "passive": "+2 Damage vs 0 Armor/broken targets." },
+        "6": { "name": "Ruin Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Armor destroyed; [Exposed]." },
+        "7": { "name": "Mythic Resonance", "cost": {"primary": 4, "secondary": 1}, "effect": "Snap enemy's primary weapon/focus.", "passive": null },
+        "8": { "name": "Shatter Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 S/1 F when destroying gear." },
+        "9": { "name": "Flawless Dismantle", "cost": {"primary": 5, "secondary": 2}, "effect": "Strip all armor/weapons/wards.", "passive": null }
+      }
+    },
+    "Logic": {
+      "name": "The Warden",
+      "governing_stat": "Logic",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "Calculated Trap", "cost": {"primary": 1, "secondary": 0}, "effect": "Fast-deploy hazard.", "passive": "Immune to triggering traps." },
+        "2": { "name": "Ricochet", "cost": {"primary": 1, "secondary": 0}, "effect": "Bounce projectile around corner.", "passive": null },
+        "3": { "name": "Grid-Lock", "cost": {"primary": 2, "secondary": 0}, "effect": "Trap applies [Immobilized].", "passive": null },
+        "4": { "name": "Choke-Point", "cost": {"primary": 2, "secondary": 0}, "effect": "Barricade a door flawlessly.", "passive": null },
+        "5": { "name": "Geometric Sight", "cost": {"primary": 3, "secondary": 0}, "effect": "Spatial analysis.", "passive": "Ranged attacks ignore 3/4 cover." },
+        "6": { "name": "Warden Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Domino Effect primings." },
+        "7": { "name": "Mythic Geometry", "cost": {"primary": 4, "secondary": 1}, "effect": "Collapse structure by removing one brick.", "passive": null },
+        "8": { "name": "Logic Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S when trap triggers." },
+        "9": { "name": "The Death Room", "cost": {"primary": 5, "secondary": 2}, "effect": "Turn Zone into unavoidable kill-box.", "passive": null }
+      }
+    },
+    "Awareness": {
+      "name": "The Sniper",
+      "governing_stat": "Awareness",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "Vitals", "cost": {"primary": 1, "secondary": 0}, "effect": "Focused strike.", "passive": "Immune to [Blinded]." },
+        "2": { "name": "Overwatch", "cost": {"primary": 1, "secondary": 0}, "effect": "Guaranteed shot on movement.", "passive": null },
+        "3": { "name": "Pin-Down", "cost": {"primary": 2, "secondary": 0}, "effect": "Suppress; remove Move beat.", "passive": null },
+        "4": { "name": "Curve the Bullet", "cost": {"primary": 2, "secondary": 0}, "effect": "Ignore Full Cover via projection.", "passive": null },
+        "5": { "name": "Horizon Sight", "cost": {"primary": 3, "secondary": 0}, "effect": "Visual dominance.", "passive": "Double range; zero distance penalties." },
+        "6": { "name": "Sniper Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: [Prone] and [Bleeding]." },
+        "7": { "name": "Mythic Trajectory", "cost": {"primary": 4, "secondary": 1}, "effect": "Shoot through solid stone.", "passive": null },
+        "8": { "name": "Sight Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S when far kill." },
+        "9": { "name": "Inevitable Bullet", "cost": {"primary": 5, "secondary": 2}, "effect": "Unavoidable kill shot; bypasses armor/magic.", "passive": null }
+      }
+    },
+    "Intuition": {
+      "name": "The Harrier",
+      "governing_stat": "Intuition",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "Taunt/Feint", "cost": {"primary": 1, "secondary": 0}, "effect": "Target gets Disadvantage.", "passive": "Immune to [Surprised]." },
+        "2": { "name": "Dumb Luck", "cost": {"primary": 1, "secondary": 0}, "effect": "Stumble out of lethal hit.", "passive": null },
+        "3": { "name": "Contagious Rage", "cost": {"primary": 2, "secondary": 0}, "effect": "Taunt jumps to adjacent enemy.", "passive": null },
+        "4": { "name": "Weapon Jam", "cost": {"primary": 2, "secondary": 0}, "effect": "Force enemy weapon to jam.", "passive": null },
+        "5": { "name": "Chaos Aura", "cost": {"primary": 3, "secondary": 0}, "effect": "Environmental entropy.", "passive": "Enemies <10 fall [Prone]." },
+        "6": { "name": "Harrier Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Must attack you; lose Action Beat." },
+        "7": { "name": "Mythic Coincidence", "cost": {"primary": 4, "secondary": 1}, "effect": "Cause catastrophic accident.", "passive": null },
+        "8": { "name": "Luck Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S on enemy crit fail." },
+        "9": { "name": "The Final Glitch", "cost": {"primary": 5, "secondary": 2}, "effect": "Target impales themselves / lethal accident.", "passive": null }
+      }
+    },
+    "Charm": {
+      "name": "The Commander",
+      "governing_stat": "Charm",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "Rally", "cost": {"primary": 1, "secondary": 0}, "effect": "Restore 1 Composure.", "passive": "Immune to [Terrified]." },
+        "2": { "name": "The Order", "cost": {"primary": 1, "secondary": 0}, "effect": "Grant ally free Move beat.", "passive": null },
+        "3": { "name": "Formation", "cost": {"primary": 2, "secondary": 0}, "effect": "Rally 3 allies.", "passive": null },
+        "4": { "name": "Phalanx", "cost": {"primary": 2, "secondary": 0}, "effect": "Adjacent allies share defense.", "passive": null },
+        "5": { "name": "Aura of Authority", "cost": {"primary": 3, "secondary": 0}, "effect": "Commanding presence.", "passive": "Advantage on Composure for allies." },
+        "6": { "name": "Commander Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Advantage on next strike." },
+        "7": { "name": "Mythic Command", "cost": {"primary": 4, "secondary": 1}, "effect": "Override death; fight at 0 HP.", "passive": null },
+        "8": { "name": "Charm Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S on ally kill." },
+        "9": { "name": "Warlord's Cry", "cost": {"primary": 5, "secondary": 2}, "effect": "Every ally takes full free turn.", "passive": null }
+      }
+    },
+    "Willpower": {
+      "name": "The Vanguard",
+      "governing_stat": "Willpower",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "The Glare", "cost": {"primary": 1, "secondary": 0}, "effect": "Force enemy focus.", "passive": "Immune to [Compelled]." },
+        "2": { "name": "Hold the Line", "cost": {"primary": 1, "secondary": 0}, "effect": "Cannot be pushed/moved.", "passive": null },
+        "3": { "name": "The Challenge", "cost": {"primary": 2, "secondary": 0}, "effect": "Draw aggro of all in Zone.", "passive": null },
+        "4": { "name": "Intimidating Wall", "cost": {"primary": 2, "secondary": 0}, "effect": "Block 10ft gap via terror.", "passive": null },
+        "5": { "name": "Lawful Aura", "cost": {"primary": 3, "secondary": 0}, "effect": "Absolute authority.", "passive": "Absorb 2 points of Composure dmg." },
+        "6": { "name": "Vanguard Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Enemies take 1 Composure dmg." },
+        "7": { "name": "Mythic Authority", "cost": {"primary": 4, "secondary": 1}, "effect": "Command horde to KNEEL.", "passive": null },
+        "8": { "name": "Will Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S if survival." },
+        "9": { "name": "Absolute Bastion", "cost": {"primary": 5, "secondary": 2}, "effect": "No ally in zone harmed for 1 round.", "passive": null }
+      }
+    },
+    "Knowledge": {
+      "name": "The Saboteur",
+      "governing_stat": "Knowledge",
+      "primary_cost_type": "focus",
+      "secondary_cost_type": "stamina",
+      "tiers": {
+        "1": { "name": "Calculated Strike", "cost": {"primary": 1, "secondary": 0}, "effect": "Cancel Advantages.", "passive": "Know exact HP/Tags." },
+        "2": { "name": "The Flaw", "cost": {"primary": 1, "secondary": 0}, "effect": "Weaponize structural data.", "passive": null },
+        "3": { "name": "System Shock", "cost": {"primary": 2, "secondary": 0}, "effect": "Strikes apply [Confused].", "passive": null },
+        "4": { "name": "The Override", "cost": {"primary": 2, "secondary": 0}, "effect": "Hijack traps, pick locks.", "passive": null },
+        "5": { "name": "Analytical Mind", "cost": {"primary": 3, "secondary": 0}, "effect": "Total recall.", "passive": "Auto-succeed hazards." },
+        "6": { "name": "Saboteur Mastery", "cost": {"primary": 0, "secondary": 0}, "effect": "T1/T2 cost 0.", "passive": "Kicker: Lose Reactive beats." },
+        "7": { "name": "Mythic Algorithm", "cost": {"primary": 4, "secondary": 1}, "effect": "Walk through arrows.", "passive": null },
+        "8": { "name": "Data Flow", "cost": {"primary": 0, "secondary": 0}, "effect": "Passive recovery.", "passive": "Restore 1 F/1 S on rewrite." },
+        "9": { "name": "Checkmate", "cost": {"primary": 5, "secondary": 2}, "effect": "Declare target action; trap auto-triggers.", "passive": null }
+      }
+    }
+  },
+  "anomalies": {
+    "Mass": {
+      "governing_stat": "Might",
+      "school": "Gravity",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Rooted (Immune to Pushed/Pulled).", "kicker": "Crush (Applies [Slowed])." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Gravitational Weight (Alter density/mass)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Pin (Knocks [Prone], cannot stand)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Directional Vectors (Walk up walls, localized orbits)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Dense Form (50% Res Force, infinite carry weight).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Implode (Armor crushes inward; [Broken Armor])." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Singularity (Compress matter to hyper-dense points)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S when crushing/catching.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Event Horizon (Squeezed out of existence)." }
+      }
+    },
+    "Ordo": {
+      "governing_stat": "Endurance",
+      "school": "Stasis",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Cold-Blooded (Immune [Frozen]).", "kicker": "Frostbite (Applies [Stiff])." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Kinetic Drain (Flash-freeze, stop pendulums)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Lock (Physically [Immobilized])." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Structural Enforcement (Lock molecular bonds)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Unbreaking (50% Res Cold, immune to aging).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Shatter (Applies [Brittle])." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "Absolute Zero (Halt biological processes)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S when stasis stops lethal hit.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Frozen Eternity (Permanent unmoving statue)." }
+      }
+    },
+    "Flux": {
+      "governing_stat": "Finesse",
+      "school": "Acid",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Teflon Skin (Immune [Grappled]).", "kicker": "Degrade (-1 Armor Mod)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Corrosion (Unbind matter/melt locks)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Liquefy (Gear gains [Broken])." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Permeability (Pass hand through glass)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Fluid Form (50% Res Acid).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Melt (Flesh/steel loses cohesion; [Weakened])." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "State Severance (Separate mixtures/poisons)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on solvent destroy.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Universal Solvent (Target melts to sludge)." }
+      }
+    },
+    "Motus": {
+      "governing_stat": "Reflex",
+      "school": "Speed",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Perpetual Motion (Immune [Slowed]).", "kicker": "Repel (Kinetic push)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Velocity (Dictate speed of object/person)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Reposition (Swap places)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Friction Control (Seize joints)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Kinetic Battery (50% Res Kinetic).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Momentum Steal (Steal Move beat)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "Vibration (Phase through walls)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on speed dodge.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Molecular Dispersal (Vibrated to red mist)." }
+      }
+    },
+    "Vita": {
+      "governing_stat": "Vitality",
+      "school": "Biomancy",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Panacea (Immune [Poisoned]).", "kicker": "Bio-Shock (Applies [Fatigued])." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Cellular Acceleration (Knit wounds)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Mutate (Applies [Maimed])." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Biological Rewiring (Graft limbs)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Hyper-Regen (50% Res Poison, auto-heal 1 HP/turn).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Tumor/Rot (-1 Max HP per round)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "Hive-Link (Connect nervous systems)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on heal ally.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Evolutionary Override (Devolve target)." }
+      }
+    },
+    "Nexus": {
+      "governing_stat": "Fortitude",
+      "school": "Matter/Heat",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Thermal Plating (Immune [Burn]).", "kicker": "Burn (1-turn burn)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Thermal Excitation (Shoot flames)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Ignite (Continuous fire)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Atomic Bonds (Melt stone, fuse iron)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Overheat (50% Res Fire).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Melt (Applies [Broken Armor])." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "Radiation (Irradiate Zone)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on incinerate.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Incinerate (Flashes to vapor)." }
+      }
+    },
+    "Ratio": {
+      "governing_stat": "Logic",
+      "school": "Geometry",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Calculated Mind (Immune [Surprised]).", "kicker": "The Arc (Bounces)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Electrical Impulse (Jumpstart)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Network (Link targets)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Geometric Vectors (Calculate rickochets)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Faraday Cage (50% Res Lightning).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Feedback Loop ([Stunned])." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "Conditional Triggers (Booby-traps)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on trigger.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "The Grid (Synchronize effects)." }
+      }
+    },
+    "Anumis": {
+      "governing_stat": "Knowledge",
+      "school": "Source Code",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "The Index (Total recall).", "kicker": "The Edit (Add/remove minor tag)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Raw Data (Hard-light platforms)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Format (Strip all buffs/debuffs)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Universal Lexicon (Dead languages)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Firewall (50% Res Arcane, immune mind-read).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "The Overwrite (Change material tag)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Archive (Save States/Fold Space)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on rewrite break.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "The Deletion (Erase target from existence)." }
+      }
+    },
+    "Lux": {
+      "governing_stat": "Awareness",
+      "school": "Light",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Unblinking (Immune [Blinded]).", "kicker": "Illuminate (Remove [Hidden])." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Photonic Projection (Lasers/Flashes)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Spotlight (No cover)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Refraction (Bend light for invisibility)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Mirror-Shield (50% Res Radiant, see through illusions).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Hard-Light (Kinetic burn)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Observer (Continent scrying)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on exposing threat.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Absolute Truth (Strip all deception)." }
+      }
+    },
+    "Omen": {
+      "governing_stat": "Intuition",
+      "school": "Entropy",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Sixth Sense (Immune [Surprised]).", "kicker": "The Jinx (Disadvantage)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Probability Shift (Force tumble)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Hex (Jumps to adjacent)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Entropic Decay (Rust/Age)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Chrono-Anchor (50% Res Decay).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Time-Steal (Steal Action beat)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Echo (Talk to timeline ghosts)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on Jinx crit fail.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Doom (Timeline severed)." }
+      }
+    },
+    "Aura": {
+      "governing_stat": "Charm",
+      "school": "Spirit",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Iron Ego (Immune [Charmed]).", "kicker": "Dissonance (Drop aggro)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "Emotional Resonance (Panic/Calm)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Chorus (Broadcast emotion)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "Spiritual Tether (Telepathy)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Soul-Ward (50% Res Psychic).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "Psychic Sever (Paralyzed)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Zeitgeist (Dictate cultural truth)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on Psychic Break.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Assimilation (Mindless thrall)." }
+      }
+    },
+    "Lex": {
+      "governing_stat": "Willpower",
+      "school": "Law",
+      "tiers": {
+        "1": { "duration": "1 Sec", "cost": {"stamina": 1, "focus": 1}, "passive": "Unyielding (Immune [Compelled]).", "kicker": "Suppress (Lose reactive beats)." },
+        "2": { "duration": "1 Rnd", "cost": {"stamina": 1, "focus": 1}, "passive": null, "kicker": "The Command (Kneel/Stop)." },
+        "3": { "duration": "1 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Edict (Prone; costs stamina to stand)." },
+        "4": { "duration": "10 Min", "cost": {"stamina": 2, "focus": 2}, "passive": null, "kicker": "The Contract (Bind spirits)." },
+        "5": { "duration": "1 Hr", "cost": {"stamina": 3, "focus": 3}, "passive": "Sovereign (50% Res Command).", "kicker": null },
+        "6": { "duration": "8 Hr", "cost": {"stamina": 0, "focus": 0}, "passive": "T1-4 cost 0 to sustain.", "kicker": "The Verdict (Terrified; cannot attack)." },
+        "7": { "duration": "24 Hr", "cost": {"stamina": 3, "focus": 4}, "passive": null, "kicker": "The Axiom (Write new physics law)." },
+        "8": { "duration": "3 Days", "cost": {"stamina": 0, "focus": 0}, "passive": "Flow: Restore 1F/1S on law violation.", "kicker": null },
+        "9": { "duration": "1 Wk", "cost": {"stamina": 2, "focus": 5}, "passive": null, "kicker": "Execution (Heart stops)." }
+      }
+    }
+  }
+}

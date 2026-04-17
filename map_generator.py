@@ -1,5 +1,14 @@
-import json
-import random
+import db_manager
+
+# Mapping between Cartographer labels and world_regions.json IDs
+BIOME_MAPPING = {
+    "Ocean": "ocean_shelf",
+    "Dust Bowl": "dust_bowl_wastes",
+    "Grind-Canyons": "the_grind",
+    "Verdant Tangle": "pine_forest",
+    "High Peaks": "frostpeak_tundra",
+    "Swamp-Mire": "blackwood_swamp"
+}
 
 def load_json(filepath):
     try:
@@ -12,8 +21,19 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None, q
     story_data = load_json("data/story_quests.json")
     templates = load_json("data/entity_templates.json")
     
-    coord_string = f"{global_pos[0]},{global_pos[1]}"
-    region_id = world_map.get("map_chunks", {}).get(coord_string, world_map.get("default_region", "pine_forest"))
+    # --- DYNAMIC OVERWORLD DATA (Ostraka Cartographer) ---
+    macro_cell = db_manager.get_macro_cell(global_pos[0], global_pos[1])
+    
+    if macro_cell:
+        # Prioritize painted data
+        region_id = BIOME_MAPPING.get(macro_cell["biome"], "pine_forest")
+        forced_faction = macro_cell["faction"] if macro_cell["faction"] != "None" else None
+    else:
+        # Fallback to static JSON
+        coord_string = f"{global_pos[0]},{global_pos[1]}"
+        region_id = world_map.get("map_chunks", {}).get(coord_string, world_map.get("default_region", "pine_forest"))
+        forced_faction = None
+
     region = world_data.get("regions", {}).get(region_id)
     if not region: return False
 
@@ -48,6 +68,11 @@ def generate_local_map(global_pos=[0,0], entry_pos=[25, 25], player_data=None, q
         map_state["entities"].append(new_player)
 
     spawn_pool = region.get("flora", []) + region.get("fauna", []) + region.get("factions", [])
+    
+    # Inject painted faction if present
+    if forced_faction:
+        spawn_pool.append(forced_faction)
+        
     if not spawn_pool: spawn_pool = ["crate"]
     
     layout = region.get("layout_type", "random")

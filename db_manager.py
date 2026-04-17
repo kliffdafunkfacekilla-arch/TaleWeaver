@@ -2,10 +2,12 @@ import sqlite3
 import json
 import os
 
-DB_NAME = "shatterlands.db"
+# Consolidated Database Path for robust global consistency
+DB_NAME = "state/shatterlands.db"
 
 def init_db():
     """Creates the vault for the world simulation if it doesn't exist."""
+    os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
@@ -27,6 +29,33 @@ def init_db():
             value TEXT
         )
     ''')
+    
+    # TABLE 3: Lore Entries (Aligned with World Builder)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS lore_entries (
+            title TEXT PRIMARY KEY,
+            category TEXT,
+            content TEXT,
+            parameters TEXT
+        )
+    ''')
+
+    # TABLE 4: Layer 4 Macro Map (The Overworld Grid)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS layer4_macro_map (
+            coord_id TEXT PRIMARY KEY,
+            biome TEXT,
+            faction TEXT,
+            location TEXT,
+            chaos_level INTEGER,
+            elevation INTEGER DEFAULT 0
+        )
+    ''')
+    # Migration: add elevation column to pre-existing databases
+    cursor.execute("PRAGMA table_info(layer4_macro_map)")
+    existing_cols = [col[1] for col in cursor.fetchall()]
+    if 'elevation' not in existing_cols:
+        cursor.execute("ALTER TABLE layer4_macro_map ADD COLUMN elevation INTEGER DEFAULT 0")
     
     conn.commit()
     conn.close()
@@ -64,9 +93,21 @@ def load_chunk(chunk_x, chunk_y):
         return json.loads(result[0])
     return None
 
+def get_macro_cell(x, y):
+    """Retrieves macro map data for a specific coordinate from Layer 4."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT biome, faction, location, chaos_level, elevation FROM layer4_macro_map WHERE coord_id=?', (f"{x},{y}",))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {"biome": row[0], "faction": row[1], "location": row[2], "chaos_level": row[3], "elevation": row[4] if row[4] is not None else 0}
+    return None
+
 def reset_world():
     """Wipes the database for a New Game."""
     if os.path.exists(DB_NAME):
+        # We only remove the DB file itself, but keep the directory
         os.remove(DB_NAME)
     init_db()
 

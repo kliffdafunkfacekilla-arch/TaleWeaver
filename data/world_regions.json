@@ -1,4 +1,4 @@
-﻿{
+{
   "regions": {
     "frostpeak_tundra": {
       "name": "Frostpeak Tundra",
@@ -49,6 +49,36 @@
       "fauna": ["chaos_hound", "swamp_leech"],
       "factions": ["cultist", "lost_traveler"],
       "encounter_chance": 0.35
+    },
+    "ocean_shelf": {
+      "name": "The Deep Shelf",
+      "layout_type": "random",
+      "biome_tags": ["water", "submerged", "saline"],
+      "weather_pool": ["heavy_rain", "dense_fog", "clear_sky"],
+      "flora": ["mud_puddle"],
+      "fauna": ["swamp_leech"],
+      "factions": ["wandering_merchant"],
+      "encounter_chance": 0.1
+    },
+    "dust_bowl_wastes": {
+      "name": "The Dust Bowl",
+      "layout_type": "clusters",
+      "biome_tags": ["desert", "arid", "barren", "windy"],
+      "weather_pool": ["clear", "dust_storm", "extreme_heat"],
+      "flora": ["dead_pine", "thicket"],
+      "fauna": ["wolf", "chaos_hound"],
+      "factions": ["bandit_thug"],
+      "encounter_chance": 0.25
+    },
+    "the_grind": {
+      "name": "The Grind Canyons",
+      "layout_type": "clusters",
+      "biome_tags": ["canyons", "rocky", "difficult_terrain"],
+      "weather_pool": ["clear", "overcast", "dense_fog"],
+      "flora": ["frozen_bush", "thicket"],
+      "fauna": ["ice_spider", "frost_wolf"],
+      "factions": ["wildling_scout", "bandit_ambusher"],
+      "encounter_chance": 0.3
     }
   }
 }

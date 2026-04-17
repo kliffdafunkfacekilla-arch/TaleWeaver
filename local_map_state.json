@@ -1,809 +1,664 @@
 {
-  "meta": {
-    "global_pos": [
-      0,
-      0
+  "local_map_state": {
+    "meta": {
+      "active_interior_deck": [],
+      "campaign_tracker": {
+        "main_plot": "Hunting the bandits who burned your village.",
+        "active_subplot": null,
+        "quest_history": [],
+        "active_quest_deck": []
+      }
+    },
+    "environment": "You are in Frostpeak Tundra. The weather is clear_cold.",
+    "entities": [
+      {
+        "id": "char_01",
+        "name": "Captain Jax",
+        "type": "player",
+        "pos": [
+          27,
+          2
+        ],
+        "species": "Human",
+        "tracks": {
+          "offense": "Might",
+          "defense": "Reflexes"
+        },
+        "hp": 20,
+        "max_hp": 20,
+        "composure": 15,
+        "max_composure": 15,
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10,
+          "beats": {
+            "move": 1,
+            "stamina": 1,
+            "focus": 1
+          }
+        },
+        "stats": {
+          "Might": 4,
+          "Endurance": 5,
+          "Reflexes": 3,
+          "Finesse": 2,
+          "Vitality": 4,
+          "Fortitude": 5,
+          "Knowledge": 3,
+          "Logic": 2,
+          "Awareness": 6,
+          "Intuition": 5,
+          "Charm": 2,
+          "Willpower": 4
+        },
+        "equipment": {
+          "weapon": "Heavy Boarding Hook",
+          "armor": "Leather River-Coat",
+          "accessory": "Aether-Compass"
+        },
+        "inventory": [
+          "Torch",
+          "Bandage",
+          "Bottle of Fir-Gin"
+        ],
+        "skills": [
+          "Grapple/Throw",
+          "Calculated Trap",
+          "Armor Crack"
+        ],
+        "tags": [
+          "player",
+          "flesh",
+          "river_folk",
+          "biped",
+          "amphibious",
+          "whisker-sense"
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_2555",
+        "pos": [
+          38,
+          25
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_7138",
+        "pos": [
+          39,
+          25
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_2316",
+        "pos": [
+          33,
+          24
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_7914",
+        "pos": [
+          37,
+          30
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_6320",
+        "pos": [
+          39,
+          27
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_2484",
+        "pos": [
+          34,
+          25
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_7067",
+        "pos": [
+          29,
+          19
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_9954",
+        "pos": [
+          32,
+          17
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_8062",
+        "pos": [
+          34,
+          19
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_5942",
+        "pos": [
+          31,
+          16
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_6608",
+        "pos": [
+          32,
+          18
+        ]
+      },
+      {
+        "name": "Frost Wolf",
+        "type": "hostile",
+        "hp": 18,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Finesse",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 12,
+          "max_stamina": 12,
+          "focus": 2,
+          "max_focus": 2
+        },
+        "skills": [
+          "Predator's Latch"
+        ],
+        "inventory": [
+          "Frost-Wolf Pelt"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "flesh",
+          "cold"
+        ],
+        "id": "ent_4738",
+        "pos": [
+          30,
+          19
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_1406",
+        "pos": [
+          33,
+          21
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_4210",
+        "pos": [
+          30,
+          16
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_4148",
+        "pos": [
+          39,
+          45
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_5620",
+        "pos": [
+          42,
+          44
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_6342",
+        "pos": [
+          44,
+          43
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_2952",
+        "pos": [
+          42,
+          41
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_6470",
+        "pos": [
+          45,
+          39
+        ]
+      },
+      {
+        "name": "Wildling Scout",
+        "type": "hostile",
+        "hp": 15,
+        "species": "Human",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "skills": [
+          "The Angle"
+        ],
+        "tags": [
+          "human",
+          "hostile",
+          "flesh"
+        ],
+        "id": "ent_4514",
+        "pos": [
+          46,
+          23
+        ]
+      },
+      {
+        "name": "Dead Pine Tree",
+        "type": "prop",
+        "hp": 15,
+        "tags": [
+          "wood",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_4502",
+        "pos": [
+          43,
+          26
+        ]
+      },
+      {
+        "name": "Ice Spider",
+        "type": "hostile",
+        "hp": 10,
+        "species": "Beast",
+        "tracks": {
+          "offense": "Awareness",
+          "defense": "Reflexes"
+        },
+        "resources": {
+          "stamina": 6,
+          "max_stamina": 6,
+          "focus": 4,
+          "max_focus": 4
+        },
+        "skills": [
+          "Calculated Trap"
+        ],
+        "inventory": [
+          "Venom Gland"
+        ],
+        "tags": [
+          "beast",
+          "hostile",
+          "cold",
+          "venomous"
+        ],
+        "id": "ent_9990",
+        "pos": [
+          44,
+          25
+        ]
+      },
+      {
+        "name": "Frozen Bush",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "plant",
+          "cold",
+          "solid"
+        ],
+        "id": "ent_8064",
+        "pos": [
+          48,
+          25
+        ]
+      },
+      {
+        "name": "Bloody Satchel",
+        "type": "prop",
+        "hp": 5,
+        "tags": [
+          "cloth",
+          "leather",
+          "story_seed"
+        ],
+        "id": "seed_6611",
+        "pos": [
+          21,
+          29
+        ]
+      }
     ],
-    "region_id": "frostpeak_tundra",
-    "map_name": "Frostpeak Tundra",
-    "grid_size": [
-      50,
-      50
-    ],
-    "map_tags": [
-      "tundra",
-      "freezing",
-      "snowy",
-      "barren",
-      "clear_cold"
-    ],
-    "clock": 58,
-    "in_combat": true
+    "latest_action": {},
+    "ai_directive": ""
   },
-  "environment": "You are in Frostpeak Tundra. The weather is clear_cold.",
-  "entities": [
-    {
-      "id": "char_01",
-      "name": "Captain Jax",
-      "type": "player",
-      "pos": [
-        21,
-        27
-      ],
-      "hp": 20,
-      "max_hp": 20,
-      "composure": 15,
-      "max_composure": 15,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 1,
-          "focus": 1
-        }
-      },
-      "stats": {
-        "Might": 4,
-        "Endurance": 5,
-        "Reflexes": 3,
-        "Finesse": 2,
-        "Vitality": 4,
-        "Fortitude": 5,
-        "Knowledge": 3,
-        "Logic": 2,
-        "Awareness": 6,
-        "Intuition": 5,
-        "Charm": 2,
-        "Willpower": 4
-      },
-      "equipment": {
-        "weapon": "Heavy Boarding Hook",
-        "armor": "Leather River-Coat",
-        "accessory": "Aether-Compass"
-      },
-      "inventory": [
-        "Torch",
-        "Bandage",
-        "Bottle of Fir-Gin",
-        "Frost-Wolf Pelt"
-      ],
-      "skills": [
-        "Grapple/Throw",
-        "Calculated Trap",
-        "Armor Crack"
-      ],
-      "tags": [
-        "player",
-        "flesh",
-        "river_folk",
-        "biped",
-        "amphibious",
-        "whisker-sense"
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_5796",
-      "pos": [
-        9,
-        22
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 12,
-        "max_stamina": 12,
-        "focus": 2,
-        "max_focus": 2
-      },
-      "skills": [
-        "Predator's Latch"
-      ],
-      "inventory": [],
-      "tags": [
-        "beast",
-        "flesh",
-        "cold",
-        "dead"
-      ],
-      "id": "ent_3656",
-      "pos": [
-        15,
-        26
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2506",
-      "pos": [
-        12,
-        28
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 0,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_3066",
-      "pos": [
-        16,
-        25
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_5045",
-      "pos": [
-        17,
-        25
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 0,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_1942",
-      "pos": [
-        18,
-        27
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 0,
-          "stamina": 1,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_7501",
-      "pos": [
-        16,
-        24
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_8164",
-      "pos": [
-        18,
-        26
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_1374",
-      "pos": [
-        20,
-        26
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 18,
-      "resources": {
-        "stamina": 12,
-        "max_stamina": 12,
-        "focus": 2,
-        "max_focus": 2,
-        "beats": {
-          "move": 0,
-          "stamina": 1,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "Predator's Latch"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "tags": [
-        "beast",
-        "hostile",
-        "flesh",
-        "cold"
-      ],
-      "id": "ent_1182",
-      "pos": [
-        13,
-        19
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 12,
-        "max_stamina": 12,
-        "focus": 2,
-        "max_focus": 2,
-        "beats": {
-          "move": 0,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "Predator's Latch"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "tags": [
-        "beast",
-        "flesh",
-        "cold",
-        "dead"
-      ],
-      "id": "ent_2075",
-      "pos": [
-        19,
-        26
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_3757",
-      "pos": [
-        20,
-        27
-      ]
-    },
-    {
-      "name": "Frost Wolf",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 12,
-        "max_stamina": 12,
-        "focus": 2,
-        "max_focus": 2,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "Predator's Latch"
-      ],
-      "inventory": [
-        "Frost-Wolf Pelt"
-      ],
-      "tags": [
-        "beast",
-        "flesh",
-        "cold",
-        "dead"
-      ],
-      "id": "ent_5042",
-      "pos": [
-        17,
-        26
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_5521",
-      "pos": [
-        29,
-        8
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_1021",
-      "pos": [
-        23,
-        44
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_4479",
-      "pos": [
-        16,
-        27
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2739",
-      "pos": [
-        22,
-        47
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 1,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_6674",
-      "pos": [
-        17,
-        26
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_7229",
-      "pos": [
-        45,
-        15
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_9402",
-      "pos": [
-        44,
-        10
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_1150",
-      "pos": [
-        40,
-        13
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2261",
-      "pos": [
-        42,
-        11
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_2149",
-      "pos": [
-        40,
-        14
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_8319",
-      "pos": [
-        14,
-        20
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_7946",
-      "pos": [
-        15,
-        18
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 0,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_5657",
-      "pos": [
-        16,
-        25
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_3677",
-      "pos": [
-        10,
-        20
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_7052",
-      "pos": [
-        25,
-        22
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_1291",
-      "pos": [
-        24,
-        19
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6522",
-      "pos": [
-        20,
-        18
-      ]
-    },
-    {
-      "name": "Wildling Scout",
-      "type": "hostile",
-      "hp": 0,
-      "resources": {
-        "stamina": 10,
-        "max_stamina": 10,
-        "focus": 10,
-        "max_focus": 10,
-        "beats": {
-          "move": 0,
-          "stamina": 0,
-          "focus": 1
-        }
-      },
-      "skills": [
-        "The Angle"
-      ],
-      "tags": [
-        "human",
-        "flesh",
-        "dead"
-      ],
-      "id": "ent_8851",
-      "pos": [
-        16,
-        25
-      ]
-    },
-    {
-      "name": "Frozen Bush",
-      "type": "prop",
-      "hp": 5,
-      "tags": [
-        "plant",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_4559",
-      "pos": [
-        24,
-        24
-      ]
-    },
-    {
-      "name": "Dead Pine Tree",
-      "type": "prop",
-      "hp": 15,
-      "tags": [
-        "wood",
-        "cold",
-        "solid"
-      ],
-      "id": "ent_6746",
-      "pos": [
-        23,
-        18
-      ]
-    }
+  "parent_map_state": null,
+  "combat_log": [
+    "Director: Welcome to Shatterlands."
   ],
   "latest_action": {
     "actor": "Captain Jax",
-    "action": "Movement",
-    "target": "[21, 27]",
+    "action": "Move",
+    "target": "27,2",
     "mechanical_result": "Moved."
-  },
-  "ai_directive": ""
+  }
 }

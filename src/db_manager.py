@@ -40,6 +40,8 @@ def init_db():
 def save_map_state(map_id: str, state_dict: dict):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    
+    # Ensure nested Pydantic models are serialized correctly
     data_str = json.dumps(state_dict, cls=PydanticEncoder)
     
     cursor.execute('''
@@ -66,7 +68,6 @@ def save_chunk(chunk_x, chunk_y, state_data):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Handle clock if it's in a nested dict
     clock = state_data.get("meta", {}).get("clock", 0)
     data_str = json.dumps(state_data, cls=PydanticEncoder)
     
@@ -93,7 +94,10 @@ def load_chunk(chunk_x, chunk_y):
 
 def reset_world():
     if os.path.exists(DB_NAME):
-        os.remove(DB_NAME)
+        try:
+            os.remove(DB_NAME)
+        except PermissionError:
+            print("[Warning] Database file is locked. Manual reset required.")
     init_db()
 
 init_db()

@@ -3,11 +3,11 @@ import random
 import os
 import asyncio
 import map_generator
-from . import entities
-from . import db_manager
-from . import actions
-from . import quest_manager
-from . import state_manager
+import entities
+import db_manager
+import actions
+import quest_manager
+import state_manager
 
 def load_state():
     """Loads the state via StateManager."""
@@ -25,6 +25,7 @@ def log_message(msg):
     state = load_state()
     log = state.setdefault("combat_log", [])
     log.append(msg)
+    # Keep last 15 items
     state["combat_log"] = log[-15:]
     save_state(state)
     print(f"[Log] {msg}")
@@ -33,14 +34,14 @@ def start_new_game():
     db_manager.reset_world()
     map_generator.generate_local_map([0,0], [25,25])
     
+    # Load what the generator produced
     state = {}
     state_path = "state/local_map_state.json"
     if os.path.exists(state_path):
-        with open(state_path, "r") as f: 
-            state = json.load(f)
+        with open(state_path, "r") as f: state = json.load(f)
     
-    if "combat_log" not in state: 
-        state["combat_log"] = ["Director: Welcome to Shatterlands."]
+    # Add system-level state
+    if "combat_log" not in state: state["combat_log"] = ["Director: Welcome to Shatterlands."]
     
     meta = state.setdefault("meta", {})
     meta["current_map_id"] = "overworld_default"
@@ -55,21 +56,13 @@ def start_new_game():
         "map_history_stack": [] 
     })
     
-    # Process entities into Pydantic models
-    if "local_map_state" in state and "entities" in state["local_map_state"]:
-        state["local_map_state"]["entities"] = [
-            entities.Entity.model_validate(e) if isinstance(e, dict) else e 
-            for e in state["local_map_state"]["entities"]
-        ]
-        
-    player = next((e for e in state["local_map_state"].get("entities", []) if e.type == "player"), None)
-    if player: 
-        entities.refresh_beats(player)
-        
+    player = next((e for e in state["local_map_state"].get("entities", []) if e["type"] == "player"), None)
+    if player: entities.refresh_beats(player)
     save_state(state)
     return state
 
 def check_encounter_end(state, player):
+    """Checks if combat should end based on hostile distance or death."""
     if not state.get("meta", {}).get("in_combat", False): return False
     
     hostiles = [e for e in state["local_map_state"].get("entities", []) if "hostile" in e.tags and e.hp > 0]
@@ -83,8 +76,7 @@ def check_encounter_end(state, player):
     for h in hostiles:
         hx, hy = h.pos
         if max(abs(px - hx), abs(py - hy)) <= 12:
-            all_far = False
-            break
+            all_far = False; break
     if all_far:
         state["meta"]["in_combat"] = False
         log_message("Distance maintained. Leveling threat alert.")
@@ -109,6 +101,7 @@ def execute_world_turn(state):
         execute_npc_pulse(state, npc, player)
 
 def execute_npc_pulse(state, npc, player):
+    """NPC Brain 2.0: Strategic pulse management."""
     entities.refresh_beats(npc)
     npc_id = npc.id
     player_id = player.id
@@ -121,22 +114,15 @@ def execute_npc_pulse(state, npc, player):
     skills_db = entities.load_skills()
     
     for skill_name in npc.skills:
-        skill_data = None
-        skill_type = "stamina"
+        skill_data = None; skill_type = "stamina"
         for stat, data in skills_db.get("tactics", {}).items():
             for tier, t_data in data.get("tiers", {}).items():
-                if t_data.get("name") == skill_name: 
-                    skill_data = t_data
-                    skill_type = "stamina"
-                    break
+                if t_data.get("name") == skill_name: skill_data = t_data; skill_type = "stamina"; break
             if skill_data: break
         if not skill_data:
             for school, data in skills_db.get("anomalies", {}).items():
                 for tier, a_data in data.get("tiers", {}).items():
-                    if a_data.get("name") == skill_name: 
-                        skill_data = a_data
-                        skill_type = "focus"
-                        break
+                    if a_data.get("name") == skill_name: skill_data = a_data; skill_type = "focus"; break
                 if skill_data: break
         
         if skill_data:
@@ -172,7 +158,7 @@ def execute_npc_pulse(state, npc, player):
     entities.regenerate_resources(npc)
 
 def apply_status_tag(entity, new_tag):
-    tags = entity.tags
+    tags = entity.setdefault("tags", [])
     cc_tags = ["staggered", "stunned", "confused", "terrified", "immobilized", "blinded", "broken_armor", "grappled"]
     is_elite = "elite" in tags or "titan" in tags
 
@@ -188,6 +174,7 @@ def apply_status_tag(entity, new_tag):
         return True
 
 def end_player_turn():
+    """Ends round, triggers enemies, and resets pulse economy."""
     state = load_state()
     player = next((e for e in state["local_map_state"].get("entities", []) if e.type == "player"), None)
     if not player or "dead" in player.tags: return "Game Over."
@@ -215,8 +202,7 @@ def end_player_turn():
     
     total_weight = 0
     for slot, item in player.equipment.items():
-        if item and item != "None": 
-            total_weight += entities.get_item_weight(item)
+        if item and item != "None": total_weight += entities.get_item_weight(item)
     capacity = entities.get_stat(player, "Endurance") or 10
     loadout_percent = (total_weight / capacity) * 100
     
@@ -334,8 +320,7 @@ def execute_equip(actor_id, item_name):
     if not actor: return "Actor missing."
     if entities.equip_item(actor, item_name):
         log_message(f"🛡️ {actor.name} equipped {item_name}.")
-        save_state(state)
-        return f"Equipped {item_name}."
+        save_state(state); return f"Equipped {item_name}."
     return "Equip failed."
 
 def execute_unequip(actor_id, slot):
@@ -344,8 +329,7 @@ def execute_unequip(actor_id, slot):
     if not actor: return "Actor missing."
     if entities.unequip_item(actor, slot):
         log_message(f"🎒 {actor.name} unequipped {slot}.")
-        save_state(state)
-        return f"Unequipped {slot}."
+        save_state(state); return f"Unequipped {slot}."
     return "Unequip failed."
 
 def execute_drop(actor_id, item_name):
@@ -354,8 +338,7 @@ def execute_drop(actor_id, item_name):
     if not actor or item_name not in actor.inventory: return "Item missing."
     actor.inventory.remove(item_name)
     log_message(f"🗑️ {actor.name} dropped {item_name}.")
-    save_state(state)
-    return f"Dropped {item_name}."
+    save_state(state); return f"Dropped {item_name}."
 
 def execute_loot(actor_id, target_id):
     state = load_state()
@@ -364,8 +347,7 @@ def execute_loot(actor_id, target_id):
     if not actor or not target: return "Target missing."
     if entities.loot_all(actor, target):
         log_message(f"💰 {actor.name} looted {target.name}.")
-        save_state(state)
-        return f"Looted {target.name}."
+        save_state(state); return f"Looted {target.name}."
     return "Nothing to loot."
 
 def execute_examine(actor_id, target_id):
@@ -387,8 +369,8 @@ def execute_examine_area(actor_id, x, y):
 
 def execute_stat_action(actor_id, target_id, selection):
     state = load_state()
-    actor = next((e for e in state["local_map_state"].get("entities", []) if e.id == actor_id or e.name == actor_id), None)
-    target = next((e for e in state["local_map_state"].get("entities", []) if e.id == target_id or e.name == target_id), None)
+    actor = next((e for e in state["local_map_state"].get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
+    target = next((e for e in state["local_map_state"].get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
     if not actor or not target: return "Error"
     
     try:
@@ -406,7 +388,7 @@ def execute_stat_action(actor_id, target_id, selection):
     if not entities.spend_stamina(actor, cost.get("val", 0)):
          return "Exhausted!"
 
-    log_message(f"🎲 {actor.name} attempts {action_name} on {target.name}...")
+    log_message(f"🎲 {actor['name']} attempts {action_name} on {target['name']}...")
     roll_total, _ = entities.roll_check(actor, stat_name)
     
     if roll_total >= 14:
@@ -431,38 +413,26 @@ def execute_skill_action(actor_id, target_id, skill_name):
     if not actor or not target: return "Error"
 
     skills_db = entities.load_skills()
-    skill_data = None
-    stat_used = ""
-    beat_type = "stamina"
+    skill_data = None; stat_used = ""; beat_type = "stamina"
 
     for stat, data in skills_db.get("tactics", {}).items():
         for tier, t_data in data.get("tiers", {}).items():
-            if t_data.get("name") == skill_name: 
-                skill_data = t_data
-                stat_used = stat
-                beat_type = "stamina"
-                break
+            if t_data.get("name") == skill_name: skill_data = t_data; stat_used = stat; beat_type = "stamina"; break
         if skill_data: break
     if not skill_data:
         for school, data in skills_db.get("anomalies", {}).items():
             for tier, a_data in data.get("tiers", {}).items():
-                if a_data.get("name") == skill_name: 
-                    skill_data = a_data
-                    stat_used = school
-                    beat_type = "focus"
-                    break
+                if a_data.get("name") == skill_name: skill_data = a_data; stat_used = school; beat_type = "focus"; break
             if skill_data: break
 
     if not skill_data: return "Skill missing."
-    if not entities.consume_beat(actor, beat_type): 
-        return f"No {beat_type.capitalize()} Beat left!"
+    if not entities.consume_beat(actor, beat_type): return f"No {beat_type.capitalize()} Beat left!"
 
     cost = skill_data.get("cost", {})
     s_cost = cost.get("primary", cost.get("stamina", 0))
     f_cost = cost.get("secondary", cost.get("focus", 0))
     
-    if actor.resources.stamina < s_cost or actor.resources.focus < f_cost: 
-        return "Exhausted!"
+    if actor.resources.stamina < s_cost or actor.resources.focus < f_cost: return "Exhausted!"
 
     actor.resources.stamina -= s_cost
     actor.resources.focus -= f_cost
@@ -479,31 +449,21 @@ def execute_skill_action(actor_id, target_id, skill_name):
         mech_result = f"{skill_name} FAILED."
         log_message(f"   ↳ FAILED.")
 
-    state["latest_action"] = {
-        "actor": actor.name, 
-        "action": skill_name, 
-        "target": target.name, 
-        "mechanical_result": mech_result
-    }
-    save_state(state)
-    return mech_result
+    state["latest_action"] = {"actor": actor.name, "action": skill_name, "target": target.name, "mechanical_result": mech_result}
+    save_state(state); return mech_result
 
 def resolve_skill_tags(actor, target, skill_data, state):
     tags = skill_data.get("tags", [])
     result_parts = []
     
     if "push" in tags:
-        ax, ay = actor.pos
-        tx, ty = target.pos
-        dx, dy = tx - ax, ty - ay
+        ax, ay = actor.pos; tx, ty = target.pos; dx, dy = tx - ax, ty - ay
         nx, ny = (1 if dx > 0 else -1 if dx < 0 else 0), (1 if dy > 0 else -1 if dy < 0 else 0)
         dest = [tx + nx, ty + ny]
         if not any(e.pos == dest and e.hp > 0 for e in state["local_map_state"].get("entities", [])):
-            target.pos = dest
-            result_parts.append(f"Pushed {target.name}")
+            target.pos = dest; result_parts.append(f"Pushed {target.name}")
         else:
-            is_dead, trauma = entities.apply_damage(target, 2)
-            result_parts.append(f"Wall-impact (2 dmg)")
+            is_dead, trauma = entities.apply_damage(target, 2); result_parts.append(f"Wall-impact (2 dmg)")
             if trauma: result_parts.append(trauma)
 
     if "control" in tags or "grapple" in tags:
@@ -521,13 +481,13 @@ def resolve_skill_tags(actor, target, skill_data, state):
     if "apply_status" in tags:
         for t in tags:
             if t not in ["apply_status", "push", "control", "grapple", "cc", "shred"]:
-                if apply_status_tag(target, t): 
-                    result_parts.append(t.replace('_', ' ').capitalize())
+                if apply_status_tag(target, t): result_parts.append(t.replace('_', ' ').capitalize())
 
     if not result_parts: result_parts.append(f"Effect triggered")
     return ", ".join(result_parts)
 
 def check_quest_progress(state):
+    """Overworld Quest Watcher: Checks if travel or region goals are met."""
     tracker = state.get("meta", {}).get("campaign_tracker", {})
     deck = tracker.get("active_quest_deck", [])
     if not deck: return False
@@ -546,8 +506,8 @@ def check_quest_progress(state):
         return True
     return False
 
-async def investigate_seed(actor_id, target_id):
-    """Triggers the Narrative Weaver to generate a quest card deck from a Story Seed (Async)."""
+def investigate_seed(actor_id, target_id):
+    """Triggers the Narrative Weaver to generate a quest card deck from a Story Seed."""
     state = load_state()
     actor = next((e for e in state["local_map_state"].get("entities", []) if e.id == actor_id or e.name == actor_id), None)
     target = next((e for e in state["local_map_state"].get("entities", []) if e.id == target_id or e.name == target_id), None)
@@ -557,8 +517,7 @@ async def investigate_seed(actor_id, target_id):
 
     log_message(f"🔍 {actor.name} investigates the {target.name}...")
     
-    # NEW ASYNC CALL
-    weaver_data = await quest_manager.generate_story_glue(target.name, state)
+    weaver_data = quest_manager.generate_story_glue(target["name"], state)
     macro_deck = quest_manager.build_macro_deck(weaver_data) 
     
     tracker = state.setdefault("meta", {}).setdefault("campaign_tracker", {})
@@ -567,21 +526,26 @@ async def investigate_seed(actor_id, target_id):
         
     log_message(f"📜 QUEST ACCEPTED: {weaver_data['story_hook']}")
     
-    target.tags.remove("story_seed")
-    if "used_seed" not in target.tags: target.tags.append("used_seed")
+    target["tags"].remove("story_seed")
+    if "used_seed" not in target["tags"]: target["tags"].append("used_seed")
     
     save_state(state)
     return "Quest started."
 
 def enter_interior(state, building_type, is_quest=False):
+    """Saves the current map to DB and loads the first interior room."""
+    # Ensure campaign tracker structure
     tracker = state.setdefault("meta", {}).setdefault("campaign_tracker", {})
     stack = tracker.setdefault("map_history_stack", [])
     
+    # 1. GET CURRENT ID AND SAVE MAP
     current_id = state.get("meta", {}).get("current_map_id", "overworld_default")
     db_manager.save_map_state(current_id, state.get("local_map_state", {}))
     
+    # 2. PUSH TO HISTORY STACK
     stack.append(current_id)
     
+    # --- QUEST PROGRESS CHECK ---
     deck = tracker.get("active_quest_deck", [])
     if deck and deck[0].get("type") == "explore_interior":
         log_message(f"📍 VOID-BREACH: Entering {building_type} to complete quest objective.")
@@ -590,25 +554,34 @@ def enter_interior(state, building_type, is_quest=False):
         if deck: tracker["active_subplot"] = deck[0].get("objective")
         else: tracker["active_subplot"] = "Dungeon Phase Active"
 
+    # Build the deck of rooms
     rooms_deck = quest_manager.build_interior_deck(building_type, is_quest)
     state["meta"]["active_interior_deck"] = rooms_deck
+    
+    # IMPORTANT: Set a new ID for the interior you just entered
     state["meta"]["current_map_id"] = f"{building_type}_{len(stack)}"
     
+    # Load the first room onto the grid
     advance_interior_room(state)
     return f"Entered {building_type}."
 
 def exit_interior(state):
+    """Restores the parent map state from the database."""
     tracker = state.get("meta", {}).get("campaign_tracker", {})
     stack = tracker.get("map_history_stack", [])
     
     if not stack:
         return "Error: No overworld to return to."
         
+    # 1. POP THE PREVIOUS MAP ID
     parent_id = stack.pop()
+    
+    # 2. RESTORE FROM DATABASE
     restored_map = db_manager.load_map_state(parent_id)
     if restored_map:
         state["local_map_state"] = restored_map
         state["meta"]["current_map_id"] = parent_id
+        # Clear active interior deck
         state["meta"]["active_interior_deck"] = []
         save_state(state) 
         return f"Exited back back to safely."
@@ -616,15 +589,19 @@ def exit_interior(state):
     return "Error: Failed to restore parent map from database."
 
 def advance_interior_room(state):
+    """Pops the next room from the deck and generates the map."""
     deck = state.get("meta", {}).get("active_interior_deck", [])
+    
     if not deck:
         return exit_interior(state)
     
     current_room = deck.pop(0)
     state["meta"]["active_interior_deck"] = deck 
     
+    # Generator now returns the split structure
     new_data = map_generator.generate_interior_room(current_room)
     state["local_map_state"] = new_data["local_map_state"]
+    # We update specific meta fields rather than overwriting the whole meta root
     state["meta"].update(new_data["meta"])
     
     save_state(state) 
@@ -632,16 +609,14 @@ def advance_interior_room(state):
 
 def execute_transition(dest_x, dest_y):
     state = load_state()
-    player_data = next((e for e in state["local_map_state"].get("entities", []) if e.type == "player"), None)
+    player_data = next((e for e in state["local_map_state"].get("entities", []) if e.get("type") == "player"), None)
     grid_w, grid_h = state["meta"]["grid_size"]
     global_pos = state["meta"].get("global_pos", [0, 0])
     
-    if player_data: 
-        state["local_map_state"]["entities"].remove(player_data)
+    if player_data: state["local_map_state"]["entities"].remove(player_data)
     db_manager.save_chunk(global_pos[0], global_pos[1], state)
     
-    new_g_x, new_g_y = global_pos[0], global_pos[1]
-    entry_x, entry_y = dest_x, dest_y
+    new_g_x, new_g_y = global_pos[0], global_pos[1]; entry_x, entry_y = dest_x, dest_y
     if dest_x >= grid_w - 1: new_g_x += 1; entry_x = 1
     elif dest_x <= 0: new_g_x -= 1; entry_x = grid_w - 2
     if dest_y >= grid_h - 1: new_g_y += 1; entry_y = 1
@@ -649,9 +624,7 @@ def execute_transition(dest_x, dest_y):
     
     new_state = db_manager.load_chunk(new_g_x, new_g_y)
     if new_state:
-        if player_data: 
-            player_data.pos = [entry_x, entry_y]
-            new_state["local_map_state"]["entities"].append(player_data)
+        if player_data: player_data["pos"] = [entry_x, entry_y]; new_state["local_map_state"]["entities"].append(player_data)
         new_state["meta"]["clock"] = state["meta"].get("clock", 0)
         check_quest_progress(new_state) 
         save_state(new_state)

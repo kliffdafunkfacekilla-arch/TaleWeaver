@@ -1,15 +1,14 @@
 import json
 import random
-import aiohttp
-import asyncio
+import requests
 
 # CONFIGURATION
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.1:8b-instruct-q3_K_L"
 
-async def generate_story_glue(seed_event, state):
+def generate_story_glue(seed_event, state):
     """
-    Narrative Weaver AI: Bridges a random map event into the campaign context (Async).
+    Narrative Weaver AI: Bridges a random map event into the campaign context.
     """
     tracker = state.get("meta", {}).get("campaign_tracker", {})
     past_history = tracker.get("quest_history", [])
@@ -38,13 +37,13 @@ async def generate_story_glue(seed_event, state):
     }
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(OLLAMA_URL, json=payload, timeout=15) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    raw_content = data.get("response", "{}")
-                    weaver_data = json.loads(raw_content)
-                    return weaver_data
+        response = requests.post(OLLAMA_URL, json=payload, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            # Most Ollama responses are in "response" key
+            raw_content = data.get("response", "{}")
+            weaver_data = json.loads(raw_content)
+            return weaver_data
     except Exception as e:
         print(f"[Weaver Error] AI failed: {e}")
 
@@ -64,6 +63,11 @@ def build_mechanical_deck(weaver_data, region_threat_level=1):
     factions = weaver_data.get("involved_factions", ["wild_beasts"])
     
     deck = []
+    
+    # Weighting logic
+    # Combat theme weighs heavily toward combat cards
+    # Stealth theme weighs toward hazards and social
+    # Puzzle theme weighs toward hazards
     
     for i in range(deck_size):
         if theme == "combat":
@@ -88,11 +92,11 @@ def build_mechanical_deck(weaver_data, region_threat_level=1):
         }
         deck.append(card)
         
+    # Force the final card to be a climax
     deck[-1]["type"] = "climax"
-    deck[-1]["threat"] += 1 
+    deck[-1]["threat"] += 1 # Bosses are harder
     
     return deck
-
 def build_macro_deck(weaver_data):
     """
     Macro Deck Builder: Generates a sequence of Overworld Macro Steps.
@@ -104,6 +108,7 @@ def build_macro_deck(weaver_data):
     target_region = random.choice(regions)
     building_type = "bandit_camp" if "sump_kin" in factions else "ruined_laboratory"
     
+    # 2-3 Step Algorithm
     deck = [
         {
             "type": "travel", 
@@ -117,6 +122,7 @@ def build_macro_deck(weaver_data):
         }
     ]
     
+    # Optional 3rd step for "Puzzle" or high complexity
     if theme == "puzzle" or random.random() > 0.7:
         deck.insert(1, {
             "type": "scout", 
@@ -128,18 +134,24 @@ def build_macro_deck(weaver_data):
 
 def build_interior_deck(building_type, is_quest=False, quest_data=None):
     """Builds a sequence of rooms for an interior location."""
+    
+    # 1. Non-Quest Buildings (Taverns, Shops, Banks)
     if not is_quest:
+        # Just a single, safe room
         return [{"room_type": f"{building_type}_main", "event": "social", "threat": 0}]
     
-    deck_size = random.randint(3, 5) 
+    # 2. Quest Dungeons (Ruins, Bandit Camps, Magistar Vaults)
+    deck_size = random.randint(3, 5) # A 3 to 5 room dungeon
     deck = []
     
+    # Card 1: The Entrance
     deck.append({
         "room_type": "entrance", 
         "event": "trap_or_guard", 
         "threat": 1
     })
     
+    # Cards 2-4: The Gauntlet
     for _ in range(deck_size - 2):
         deck.append({
             "room_type": "corridor", 
@@ -147,6 +159,7 @@ def build_interior_deck(building_type, is_quest=False, quest_data=None):
             "threat": 2
         })
         
+    # Final Card: The Climax
     deck.append({
         "room_type": "boss_chamber", 
         "event": "boss_combat", 

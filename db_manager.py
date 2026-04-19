@@ -10,6 +10,14 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
+    # GLOBAL_META: Tracks world-state flags and the celestial clock
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS global_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+
     # Core World Map (Macro)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS layer4_macro_map (
@@ -35,7 +43,7 @@ def init_db():
         )
     ''')
 
-    # Add migration for resource_wealth/chaos_level if they didn't exist
+    # Add migration checks
     cursor.execute("PRAGMA table_info(layer4_macro_map)")
     existing_cols = [col[1] for col in cursor.fetchall()]
     if 'resource_wealth' not in existing_cols:
@@ -43,7 +51,6 @@ def init_db():
     if 'chaos_level' not in existing_cols:
         cursor.execute("ALTER TABLE layer4_macro_map ADD COLUMN chaos_level INTEGER DEFAULT 0")
 
-    # Add migration for new 4X tables
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
     tables = [t[0] for t in cursor.fetchall()]
     if 'buildings' not in tables:
@@ -60,58 +67,40 @@ def init_db():
     conn.close()
 
 def reset_world():
-    """Wipes all persistent data and re-initializes the database."""
-    print("[DATABASE] Resetting world state...")
     if os.path.exists(DB_NAME):
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
         tables = cursor.fetchall()
-        for table in tables:
-            cursor.execute(f"DROP TABLE {table[0]}")
-        conn.commit()
-        conn.close()
-    
-    if os.path.exists("local_map_state.json"):
-        os.remove("local_map_state.json")
-        
+        for table in tables: cursor.execute(f"DROP TABLE {table[0]}")
+        conn.commit(); conn.close()
+    if os.path.exists("local_map_state.json"): os.remove("local_map_state.json")
+    if os.path.exists("local_map_state.lock"): os.remove("local_map_state.lock")
     init_db()
-    print("[DATABASE] World re-initialized.")
 
 def save_chunk(x, y, state):
-    """Saves a local map chunk to the persistent vault."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     data = json.dumps(state)
     clock = state.get("local_map_state", {}).get("meta", {}).get("clock", 0)
-    cursor.execute('''
-        INSERT OR REPLACE INTO map_chunks (chunk_x, chunk_y, data_json, last_visited_clock)
-        VALUES (?, ?, ?, ?)
-    ''', (x, y, data, clock))
-    conn.commit()
-    conn.close()
+    cursor.execute('INSERT OR REPLACE INTO map_chunks (chunk_x, chunk_y, data_json, last_visited_clock) VALUES (?, ?, ?, ?)', (x, y, data, clock))
+    conn.commit(); conn.close()
 
 def load_chunk(x, y):
-    """Loads a local map chunk from the persistent vault."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT data_json FROM map_chunks WHERE chunk_x = ? AND chunk_y = ?", (x, y))
     row = cursor.fetchone()
     conn.close()
-    if row:
-        return json.loads(row[0])
-    return None
+    return json.loads(row[0]) if row else None
 
 def get_macro_cell(x, y):
-    """Retrieves the macro-level world state for a specific L4 coordinate."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT biome, chaos_level, fractal_dna FROM layer4_macro_map WHERE coord_id = ?", (f"{x},{y}",))
     row = cursor.fetchone()
     conn.close()
-    if row:
-        return {"biome": row[0], "chaos": row[1], "dna": row[2]}
-    return None
+    return {"biome": row[0], "chaos": row[1], "dna": row[2]} if row else None
 
 if __name__ == "__main__":
     init_db()

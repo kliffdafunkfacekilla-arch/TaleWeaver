@@ -39,42 +39,16 @@ def save_state(state):
     g_pos = state["local_map_state"].get("meta", {}).get("global_pos", [0,0])
     db_manager.save_chunk(g_pos[0], g_pos[1], state)
 
-def log_message(msg):
-    """Redirects events to the persistent combat log in the game state."""
-    state = load_state()
-    log = state.setdefault("combat_log", [])
-    log.append(msg)
-    # Keep last 15 items
-    state["combat_log"] = log[-15:]
-    save_state(state)
-    print(f"[Log] {msg}")
 
 def start_new_game():
     db_manager.reset_world()
-    map_generator.generate_local_map([0,0], [25,25])
-    # The generator currently writes a flat map. Load it and wrap it.
-    flat_map = {}
-    if os.path.exists("local_map_state.json"):
-        with open("local_map_state.json", "r") as f: flat_map = json.load(f)
+    # Generator now returns the raw map data directly
+    local_map_data = map_generator.generate_local_map([0,0], [50,50])
     
     state = {
-        "local_map_state": flat_map,
+        "local_map_state": local_map_data,
+        "parent_map_state": None,
         "combat_log": ["Director: Welcome to Shatterlands."]
-    }
-    
-    meta = state["local_map_state"].setdefault("meta", {})
-    # Refactor campaign tracker into the nested structure or keep it top-level?
-    # User's snippet puts active_interior_deck in state["local_map_state"]["meta"].
-    # I'll keep top-level meta for campaign/system stuff.
-    state["local_map_state"]["meta"] = {
-        "active_interior_deck": [],
-        "campaign_tracker": {
-            "main_plot": "Hunting the bandits who burned your village.",
-            "active_subplot": None,
-            "quest_history": [],
-            "active_quest_deck": [],
-            "map_history_stack": [] # BREADCRUMB TRAIL
-        }
     }
     
     player = next((e for e in state["local_map_state"].get("entities", []) if e["type"] == "player"), None)
@@ -86,10 +60,10 @@ def check_encounter_end(state, player):
     """Checks if combat should end based on hostile distance or death."""
     if not state["local_map_state"].get("meta", {}).get("in_combat", False): return False
     
-    hostiles = [e for e in state["local_map_state"].get("entities", []) if "hostile" in e.get("tags", []) and e.get("hp", 0) > 0]
+    hostiles = [e for e in state["local_map_state"].get("entities", []) if ("hostile" in e.get("tags", []) or e.get("type") == "hostile") and e.get("hp", 0) > 0]
     if not hostiles:
         state["local_map_state"]["meta"]["in_combat"] = False
-        log_message("Threat eliminated. Returning to Explore Mode.")
+        log_message("Threat eliminated. Returning to Explore Mode.", state=state)
         return True
         
     px, py = player["pos"]
@@ -100,8 +74,28 @@ def check_encounter_end(state, player):
             all_far = False; break
     if all_far:
         state["local_map_state"]["meta"]["in_combat"] = False
-        log_message("Distance maintained. Leveling threat alert.")
+        log_message("Distance maintained. Leveling threat alert.", state=state)
         return True
+    return False
+
+def evaluate_encounter_threat(state):
+    """Passively scans for hostiles and triggers combat mode if Jax gets too close."""
+    if state["local_map_state"].get("meta", {}).get("in_combat", False): return False
+    
+    player = next((e for e in state["local_map_state"].get("entities", []) if e.get("type") == "player"), None)
+    if not player: return False
+    
+    hostiles = [e for e in state["local_map_state"].get("entities", []) if ("hostile" in e.get("tags", []) or e.get("type") == "hostile") and e.get("hp", 0) > 0]
+    if not hostiles: return False
+    
+    px, py = player["pos"]
+    for h in hostiles:
+        hx, hy = h["pos"]
+        dist = max(abs(px - hx), abs(py - hy))
+        if dist <= 10: # Aggro radius
+            state["local_map_state"]["meta"]["in_combat"] = True
+            log_message(f"⚠️ THREAT DETECTED: {h['name']} is nearby. Entering Encounter Mode.", state=state)
+            return True
     return False
 
 def execute_world_turn(state):
@@ -178,7 +172,7 @@ def execute_npc_pulse(state, npc, player):
         # PERCEPTION CHECK
         p_stats = entities.get_derived_stats(player)
         if dist <= p_stats.get("Perception", 8):
-            log_message(f"🏃 {npc['name']} closes the gap.")
+            log_message(f"🏃 {npc['name']} closes the gap.", state=state)
 
     # --- 3. FALLBACK ATTACK ---
     if dist <= entities.get_weapon_stats(npc)["range"]:
@@ -215,12 +209,12 @@ def end_player_turn():
     for e in state["local_map_state"].get("entities", []):
         if "bleeding" in e.get("tags", []) and e.get("hp", 0) > 0:
             e["hp"] -= 1
-            log_message(f"🩸 {e['name']} suffers 1 damage from bleeding.")
+            log_message(f"🩸 {e['name']} suffers 1 damage from bleeding.", state=state)
             if e["hp"] <= 0:
                 e["hp"] = 0
                 if "hostile" in e.get("tags", []): e["tags"].remove("hostile")
                 if "dead" not in e.get("tags", []): e["tags"].append("dead")
-                log_message(f"☠️ {e['name']} has bled out.")
+                log_message(f"☠️ {e['name']} has bled out.", state=state)
 
     # Refresh Beats AFTER clearing statuses
     for e in state["local_map_state"].get("entities", []):
@@ -272,18 +266,18 @@ def execute_attack(actor_id, target_id):
     
     # --- RANGED VS MELEE CONTEXT ---
     attack_type = "Ranged Attack" if w_stats["range"] > 1 else "Melee Attack"
-    log_message(f"⚔️ {actor['name']} performs a {attack_type.lower()} on {target['name']}...")
+    log_message(f"⚔️ {actor['name']} performs a {attack_type.lower()} on {target['name']}...", state=state)
 
     if attack_total > defense_total:
         # Damage scales with the Offense Track stat
         damage = max(1, random.randint(1, w_stats["die"]) + w_stats["flat"] + entities.get_stat(actor, att_stat))
         is_dead, trauma_msg = entities.apply_damage(target, damage)
         res = f"HIT for {damage} dmg!" + (" DEAD." if is_dead else "")
-        log_message(f"   ↳ {res}")
-        if trauma_msg: log_message(f"   ↳ {trauma_msg}")
+        log_message(f"   ↳ {res}", state=state)
+        if trauma_msg: log_message(f"   ↳ {trauma_msg}", state=state)
     else:
         res = f"Missed."
-        log_message(f"   ↳ {res}")
+        log_message(f"   ↳ {res}", state=state)
         
     state["latest_action"] = {
         "actor": actor["name"], 
@@ -297,6 +291,20 @@ def execute_attack(actor_id, target_id):
     save_state(state)
     return res
 
+def log_message(msg, state=None):
+    """Redirects events to the persistent combat log. Support atomic state updates."""
+    should_save = False
+    if state is None:
+        state = load_state()
+        should_save = True
+    
+    log = state.setdefault("combat_log", [])
+    log.append(msg)
+    state["combat_log"] = log[-15:]
+    
+    if should_save: save_state(state)
+    print(f"[Log] {msg}")
+
 def execute_move(actor_id, dest_x, dest_y):
     state = load_state()
     actor = next((e for e in state["local_map_state"].get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
@@ -306,19 +314,29 @@ def execute_move(actor_id, dest_x, dest_y):
     dx, dy = abs(actor["pos"][0] - dest_x), abs(actor["pos"][1] - dest_y)
     dist = max(dx, dy)
     
-    speed = entities.get_movement_speed(actor)
-    if dist > speed: return f"Distance too far! (Speed: {speed})"
-    
     if is_combat:
-        if not entities.consume_beat(actor, "move"): return "No Move Beats!"
-        if not entities.spend_stamina(actor, 1): return "Exhausted!"
+        res = actor.setdefault("resources", {})
+        rem = res.get("move_remaining", 0)
+        
+        if rem >= dist:
+            res["move_remaining"] -= dist
+        else:
+            # Consume a Beat to refill the reservoir
+            if not entities.consume_beat(actor, "move"): return "No Move Beats!"
+            if not entities.spend_stamina(actor, 1): return "Exhausted!"
+            
+            refill = entities.get_movement_speed(actor)
+            res["move_remaining"] = (rem + refill) - dist
+    else:
+        speed = entities.get_movement_speed(actor)
+        if dist > speed: return f"Distance too far! (Speed: {speed})"
     
     actor["pos"] = [dest_x, dest_y]
-    state["latest_action"] = {"actor": actor["name"], "action": "Move", "target": f"{dest_x},{dest_y}", "mechanical_result": "Moved."}
+    mech_res = f"Moved to {dest_x},{dest_y}."
+    state["latest_action"] = {"actor": actor["name"], "action": "Move", "target": f"{dest_x},{dest_y}", "mechanical_result": mech_res}
     
-    # --- QUEST PROGRESS CHECK ---
     check_quest_progress(state)
-    
+    evaluate_encounter_threat(state)
     save_state(state)
     return "Moved."
 
@@ -377,15 +395,6 @@ def execute_drop(actor_id, item_name):
     actor["inventory"].remove(item_name)
     log_message(f"🗑️ {actor['name']} dropped {item_name}.")
     save_state(state); return f"Dropped {item_name}."
-
-def execute_loot(actor_id, target_id):
-    state = load_state()
-    actor = next((e for e in state["local_map_state"].get("entities", []) if e.get("id") == actor_id or e.get("name") == actor_id), None)
-    target = next((e for e in state["local_map_state"].get("entities", []) if e.get("id") == target_id or e.get("name") == target_id), None)
-    if not actor or not target: return "Target missing."
-    if entities.loot_all(actor, target):
-        log_message(f"💰 {actor['name']} looted {target['name']}.")
-        save_state(state); return f"Looted {target['name']}."
     return "Nothing to loot."
 
 def execute_examine(actor_id, target_id):
@@ -429,7 +438,7 @@ def execute_stat_action(actor_id, target_id, selection):
     if not entities.spend_stamina(actor, cost.get("val", 0)):
          return "Exhausted!"
 
-    log_message(f"🎲 {actor['name']} attempts {action_name} on {target['name']}...")
+    log_message(f"🎲 {actor['name']} attempts {action_name} on {target['name']}...", state=state)
     roll_total, _ = entities.roll_check(actor, stat_name)
     
     if roll_total >= 14:
@@ -439,10 +448,10 @@ def execute_stat_action(actor_id, target_id, selection):
             if trauma: res += f" {trauma}"
         else:
             res = "SUCCESS: Effect triggered."
-        log_message(f"   ↳ {res}")
+        log_message(f"   ↳ {res}", state=state)
     else:
         res = "FAILED."
-        log_message(f"   ↳ {res}")
+        log_message(f"   ↳ {res}", state=state)
         
     save_state(state)
     return res
@@ -478,17 +487,17 @@ def execute_skill_action(actor_id, target_id, skill_name):
     actor["resources"]["stamina"] -= s_cost
     actor["resources"]["focus"] -= f_cost
     
-    log_message(f"🌀 {actor['name']} uses {skill_name} (-{s_cost}S, -{f_cost}F)")
+    log_message(f"🌀 {actor['name']} uses {skill_name} (-{s_cost}S, -{f_cost}F)", state=state)
 
     roll_total, _ = entities.roll_check(actor, stat_used)
     success = roll_total >= 12
 
     if success:
         mech_result = resolve_skill_tags(actor, target, skill_data, state)
-        log_message(f"   ↳ SUCCESS: {mech_result}")
+        log_message(f"   ↳ SUCCESS: {mech_result}", state=state)
     else:
         mech_result = f"{skill_name} FAILED."
-        log_message(f"   ↳ FAILED.")
+        log_message(f"   ↳ FAILED.", state=state)
 
     state["latest_action"] = {"actor": actor["name"], "action": skill_name, "target": target["name"], "mechanical_result": mech_result}
     save_state(state); return mech_result
@@ -539,7 +548,7 @@ def check_quest_progress(state):
     region_id = state["local_map_state"].get("meta", {}).get("region_id")
     
     if current_step["type"] == "travel" and current_step.get("target_region") == region_id:
-        log_message(f"✅ OBJECTIVE COMPLETE: Arrived in {region_id}.")
+        log_message(f"✅ OBJECTIVE COMPLETE: Arrived in {region_id}.", state=state)
         deck.pop(0)
         tracker["active_quest_deck"] = deck
         if deck:
@@ -562,18 +571,18 @@ def investigate_seed(actor_id, target_id):
     if not target or "story_seed" not in target.get("tags", []):
         return "Nothing special here."
 
-    log_message(f"🔍 {actor['name']} investigates the {target['name']}...")
+    log_message(f"🔍 {actor['name']} investigates the {target['name']}...", state=state)
     
     # CALL THE WEAVER
     weaver_data = quest_manager.generate_story_glue(target["name"], state)
-    macro_deck = quest_manager.build_macro_deck(weaver_data) # NEW MACRO LOGIC
+    macro_deck = quest_manager.build_macro_deck(weaver_data)
     
     # UPDATE CAMPAIGN
     tracker = state["local_map_state"]["meta"].setdefault("campaign_tracker", {})
     tracker["active_quest_deck"] = macro_deck
     tracker["active_subplot"] = macro_deck[0]["objective"]
         
-    log_message(f"📜 QUEST ACCEPTED: {weaver_data['story_hook']}")
+    log_message(f"📜 QUEST ACCEPTED: {weaver_data['story_hook']}", state=state)
     
     # CONSUME THE SEED
     target["tags"].remove("story_seed")
@@ -583,79 +592,53 @@ def investigate_seed(actor_id, target_id):
     return "Quest started."
 
 def enter_interior(state, building_type, is_quest=False):
-    """Saves the current map to DB and loads the first interior room."""
-    # Ensure campaign tracker structure
-    meta = state["local_map_state"].setdefault("meta", {})
-    tracker = meta.setdefault("campaign_tracker", {})
-    stack = tracker.setdefault("map_history_stack", [])
+    """Freezes the overworld and loads the first interior room."""
+    if "parent_map_state" not in state:
+        state["parent_map_state"] = None
+        
+    state["parent_map_state"] = copy.deepcopy(state.get("local_map_state", {}))
     
-    # 1. PERSIST THE CURRENT MAP
-    current_id = meta.get("current_map_id", "overworld_default")
-    db_manager.save_map_state(current_id, state["local_map_state"])
-    
-    # 2. PUSH TO HISTORY STACK
-    stack.append(current_id)
-    
-    # --- QUEST PROGRESS CHECK ---
-    # If the current quest step is 'explore_interior', we pop it now as we've successfully entered the goal.
     tracker = state["local_map_state"].get("meta", {}).get("campaign_tracker", {})
     deck = tracker.get("active_quest_deck", [])
     if deck and deck[0].get("type") == "explore_interior":
-        log_message(f"📍 VOID-BREACH: Entering {building_type} to complete quest objective.")
+        log_message(f"📍 VOID-BREACH: Entering {building_type} to complete quest objective.", state=state)
         deck.pop(0)
         tracker["active_quest_deck"] = deck
         if deck: tracker["active_subplot"] = deck[0].get("objective")
         else: tracker["active_subplot"] = "Dungeon Phase Active"
 
-    # Build the deck of rooms
     rooms_deck = quest_manager.build_interior_deck(building_type, is_quest)
     
-    # Store the deck in the meta tracker
     if "meta" not in state:
         state["local_map_state"]["meta"] = {}
     state["local_map_state"]["meta"]["active_interior_deck"] = rooms_deck
     
-    # Load the first room onto the grid
     advance_interior_room(state)
     return f"Entered {building_type}."
 
 def exit_interior(state):
-    """Restores the parent map state from the database."""
-    tracker = state["local_map_state"].get("meta", {}).get("campaign_tracker", {})
-    stack = tracker.get("map_history_stack", [])
-    
-    if not stack:
-        return "Error: No overworld to return to."
-        
-    # 1. POP THE PREVIOUS MAP ID
-    parent_id = stack.pop()
-    
-    # 2. RESTORE FROM DATABASE
-    restored_map = db_manager.load_map_state(parent_id)
-    if restored_map:
-        state["local_map_state"] = restored_map
-        # Clear specific dungeon meta if needed (e.g. interior deck)
+    """Restores the saved overworld state."""
+    if state.get("parent_map_state"):
+        state["local_map_state"] = state["parent_map_state"]
+        state["parent_map_state"] = None
         state["local_map_state"]["meta"]["active_interior_deck"] = []
-        save_state(state) # Sync state
-        return f"Exited back to: {state['local_map_state']['meta'].get('map_name', 'Surface')}"
-    
-    return "Error: Failed to restore parent map from database."
+        save_state(state)
+        return "Exited back to the surface."
+    return "Error: No overworld to return to."
 
 def advance_interior_room(state):
     """Pops the next room from the deck and generates the map."""
     deck = state["local_map_state"]["meta"].get("active_interior_deck", [])
     
-    # If the deck is empty, the dungeon is clear. Exit to overworld.
     if not deck:
         return exit_interior(state)
     
-    # Draw the next room card
     current_room = deck.pop(0)
-    state["local_map_state"]["meta"]["active_interior_deck"] = deck # Save the updated deck
+    state["local_map_state"]["meta"]["active_interior_deck"] = deck
     
-    # Tell the map generator to build this specific room
     state["local_map_state"] = map_generator.generate_interior_room(current_room)
-    save_state(state) # Ensure persistence
+    evaluate_encounter_threat(state)
+    save_state(state)
     return f"Advanced to next area: {current_room.get('room_type', 'Unknown')}"
 
 def execute_transition(dest_x, dest_y):
@@ -672,16 +655,92 @@ def execute_transition(dest_x, dest_y):
     elif dest_y <= 0: new_g_y -= 1; entry_y = grid_h - 2
     new_state = db_manager.load_chunk(new_g_x, new_g_y)
     if new_state:
-        if player_data: player_data["pos"] = [entry_x, entry_y]; new_state["local_map_state"]["entities"].append(player_data)
+        if player_data: 
+            player_data["pos"] = [entry_x, entry_y]
+            new_state["local_map_state"]["entities"] = [e for e in new_state["local_map_state"]["entities"] if e["type"] != "player"]
+            new_state["local_map_state"]["entities"].append(player_data)
         new_state["local_map_state"]["meta"]["clock"] = state["local_map_state"]["meta"].get("clock", 0)
-        check_quest_progress(new_state) # PROGRESS CHECK ON ARRIVAL
-        save_state(new_state)
+        check_quest_progress(new_state)
     else:
-        deck = state["local_map_state"].get("meta", {}).get("campaign_tracker", {}).get("active_quest_deck", [])
-        map_generator.generate_local_map([new_g_x, new_g_y], [entry_x, entry_y], player_data=player_data, quest_deck=deck)
-        new_state = load_state()
-        new_state["local_map_state"]["meta"]["clock"] = state["local_map_state"]["meta"].get("clock", 0)
-        check_quest_progress(new_state) # PROGRESS CHECK ON NEW MAP
-        save_state(new_state)
-    log_message(f"📍 Region Transition: {global_pos} ➔ {[new_g_x, new_g_y]}")
+        local_data = map_generator.generate_local_map([new_g_x, new_g_y], [entry_x, entry_y], player_data=player_data)
+        new_state = {
+            "local_map_state": local_data,
+            "parent_map_state": None,
+            "combat_log": state.get("combat_log", []) + [f"📍 Region Transition: {global_pos} ➔ {[new_g_x, new_g_y]}"]
+        }
+        check_quest_progress(new_state)
+    
+    evaluate_encounter_threat(new_state)
+    save_state(new_state)
     return "Transition complete."
+
+class GameEngine:
+    def execute_action(self, intent_json, player, state):
+        """Pure Python deterministic engine. No AI allowed here."""
+        action = intent_json.get("action", "UNKNOWN").upper()
+        target_name = intent_json.get("target", "None")
+        
+        target = next((e for e in state["local_map_state"].get("entities", []) if e["name"].lower() == target_name.lower()), None)
+        
+        if action == "MOVE":
+            try:
+                if "," in target_name:
+                    tx, ty = map(int, target_name.split(","))
+                elif target:
+                    tx, ty = target["pos"]
+                else: 
+                    return {"status": "FAIL", "event": "Destination unknown.", "mechanics_log": f"Invalid target: {target_name}"}
+                
+                px, py = player["pos"]
+                dist = max(abs(px - tx), abs(py - ty))
+                speed = entities.get_movement_speed(player)
+                
+                if speed >= dist:
+                    player["pos"] = [tx, ty]
+                    # Update state in memory
+                    return {"status": "SUCCESS", "event": f"Jax moved to {target_name}.", "mechanics_log": f"Dist: {dist}, Speed: {speed}"}
+                else:
+                    return {"status": "FAIL", "event": "Distance too far.", "mechanics_log": f"Dist: {dist}, Speed: {speed}"}
+            except:
+                return {"status": "FAIL", "event": "Coordinate error.", "mechanics_log": "Parser failed to read destination."}
+
+        elif action == "ATTACK":
+            if not target or target.get("hp", 0) <= 0:
+                return {"status": "FAIL", "event": "No valid target to strike.", "mechanics_log": "Target missing or dead."}
+            
+            px, py = player["pos"]; tx, ty = target["pos"]; dist = max(abs(px - tx), abs(py - ty))
+            if dist > 1:
+                return {"status": "FAIL", "event": "Target is out of reach.", "mechanics_log": f"Dist: {dist}, Max: 1"}
+
+            roll = random.randint(1, 20)
+            attack_stat = entities.get_attack_stat(player)
+            attack_total = roll + entities.get_stat(player, attack_stat)
+            
+            def_stat = entities.get_defense_stat(target)
+            defense_total, _ = entities.roll_check(target, def_stat)
+            
+            if attack_total >= defense_total:
+                # DYNAMIC DAMAGE RESOLUTION
+                w_stats = entities.get_weapon_stats(player)
+                damage = max(1, random.randint(1, w_stats.get("die", 4)) + w_stats.get("flat", 0) + entities.get_stat(player, attack_stat))
+                is_dead, trauma = entities.apply_damage(target, damage)
+                res_event = f"Jax hits {target_name} for {damage} damage."
+                if is_dead: res_event += " The threat is neutralized."
+                return {"status": "SUCCESS", "event": res_event, "mechanics_log": f"Roll {roll} + {attack_stat} vs Def {defense_total}"}
+            else:
+                return {"status": "FAIL", "event": f"Jax swings at {target_name} and misses.", "mechanics_log": f"Roll {roll} + {attack_stat} vs Def {defense_total}"}
+
+        elif action == "EXAMINE":
+            if not target: return {"status": "FAIL", "event": "Nothing there to see.", "mechanics_log": "Target None"}
+            tags = ", ".join(target.get("tags", []))
+            return {"status": "SUCCESS", "event": f"Jax observes the {target_name}. It is {tags}.", "mechanics_log": f"Examine successful."}
+
+        elif action == "LOOT":
+            if not target or "dead" not in target.get("tags", []):
+                return {"status": "FAIL", "event": "Nothing to loot.", "mechanics_log": "Target alive or missing."}
+            if entities.loot_all(player, target):
+                return {"status": "SUCCESS", "event": f"Jax loots the remains of {target_name}.", "mechanics_log": "Loot transfer successful."}
+            else:
+                return {"status": "FAIL", "event": f"The pockets of {target_name} are empty.", "mechanics_log": "Loot table empty."}
+
+        return {"status": "FAIL", "event": "Jax hesitates, unsure of how to proceed.", "mechanics_log": f"Action {action} not implemented or unknown."}

@@ -1,664 +1,810 @@
 {
   "local_map_state": {
+    "entities": [
+      {
+        "name": "Jax",
+        "type": "player",
+        "pos": [
+          50,
+          50
+        ],
+        "hp": 20,
+        "max_hp": 20,
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 8,
+          "max_focus": 10,
+          "beats": {
+            "move": 1,
+            "stamina": 1,
+            "focus": 0
+          },
+          "move_remaining": 1
+        },
+        "inventory": [
+          "Bandage"
+        ],
+        "skills": [
+          "Slash",
+          "Persuade"
+        ],
+        "tags": [
+          "unbreakable"
+        ],
+        "stats": {
+          "Logic": 10,
+          "Charm": 10
+        }
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          65,
+          63
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          50,
+          45
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          55,
+          72
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          27,
+          36
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          10,
+          92
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          20,
+          69
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          31,
+          58
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          95,
+          17
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          82,
+          18
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          80,
+          43
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          14,
+          62
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          36,
+          72
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          43,
+          65
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          44,
+          2
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          20,
+          75
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          51,
+          37
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          54,
+          76
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          57,
+          94
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          58,
+          12
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          81,
+          19
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          95,
+          16
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          89,
+          80
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          69,
+          5
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          90,
+          74
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          30,
+          83
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          96,
+          92
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          22,
+          49
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          42,
+          71
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          45,
+          30
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          24,
+          73
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          96,
+          31
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          49,
+          14
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          24,
+          66
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          30,
+          17
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          80,
+          47
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          60,
+          74
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          11,
+          33
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          67,
+          68
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          52,
+          12
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          94,
+          21
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          53,
+          40
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          96,
+          90
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          61,
+          20
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          37,
+          86
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          66,
+          50
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wandering_merchant",
+        "type": "hostile",
+        "pos": [
+          18,
+          93
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          37,
+          10
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          37,
+          96
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          78,
+          67
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          48,
+          6
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bandit_thug",
+        "type": "hostile",
+        "pos": [
+          29,
+          57
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          67,
+          42
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          77,
+          45
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          16,
+          16
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          79,
+          50
+        ],
+        "hp": 5,
+        "tags": [
+          "living",
+          "biome_spawn"
+        ]
+      },
+      {
+        "id": "TargetNPC",
+        "name": "Senator Vaelen",
+        "type": "npc",
+        "pos": [
+          51,
+          51
+        ],
+        "stats": {
+          "Willpower": 2,
+          "Intuition": 1,
+          "Knowledge": 3
+        },
+        "tags": [
+          "social_target",
+          "shaken",
+          "broken"
+        ],
+        "max_composure": 20,
+        "composure": 0
+      }
+    ],
     "meta": {
-      "active_interior_deck": [],
+      "grid_size": [
+        100,
+        100
+      ],
+      "global_pos": [
+        0,
+        0
+      ],
+      "region_id": "pine_forest",
+      "clock": 0,
       "campaign_tracker": {
         "main_plot": "Hunting the bandits who burned your village.",
         "active_subplot": null,
         "quest_history": [],
         "active_quest_deck": []
-      }
-    },
-    "environment": "You are in Frostpeak Tundra. The weather is clear_cold.",
-    "entities": [
-      {
-        "id": "char_01",
-        "name": "Captain Jax",
-        "type": "player",
-        "pos": [
-          27,
-          2
-        ],
-        "species": "Human",
-        "tracks": {
-          "offense": "Might",
-          "defense": "Reflexes"
-        },
-        "hp": 20,
-        "max_hp": 20,
-        "composure": 15,
-        "max_composure": 15,
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10,
-          "beats": {
-            "move": 1,
-            "stamina": 1,
-            "focus": 1
-          }
-        },
-        "stats": {
-          "Might": 4,
-          "Endurance": 5,
-          "Reflexes": 3,
-          "Finesse": 2,
-          "Vitality": 4,
-          "Fortitude": 5,
-          "Knowledge": 3,
-          "Logic": 2,
-          "Awareness": 6,
-          "Intuition": 5,
-          "Charm": 2,
-          "Willpower": 4
-        },
-        "equipment": {
-          "weapon": "Heavy Boarding Hook",
-          "armor": "Leather River-Coat",
-          "accessory": "Aether-Compass"
-        },
-        "inventory": [
-          "Torch",
-          "Bandage",
-          "Bottle of Fir-Gin"
-        ],
-        "skills": [
-          "Grapple/Throw",
-          "Calculated Trap",
-          "Armor Crack"
-        ],
-        "tags": [
-          "player",
-          "flesh",
-          "river_folk",
-          "biped",
-          "amphibious",
-          "whisker-sense"
-        ]
       },
-      {
-        "name": "Frozen Bush",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "plant",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_2555",
-        "pos": [
-          38,
-          25
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_7138",
-        "pos": [
-          39,
-          25
-        ]
-      },
-      {
-        "name": "Frost Wolf",
-        "type": "hostile",
-        "hp": 18,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Finesse",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 12,
-          "max_stamina": 12,
-          "focus": 2,
-          "max_focus": 2
-        },
-        "skills": [
-          "Predator's Latch"
-        ],
-        "inventory": [
-          "Frost-Wolf Pelt"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "flesh",
-          "cold"
-        ],
-        "id": "ent_2316",
-        "pos": [
-          33,
-          24
-        ]
-      },
-      {
-        "name": "Dead Pine Tree",
-        "type": "prop",
-        "hp": 15,
-        "tags": [
-          "wood",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_7914",
-        "pos": [
-          37,
-          30
-        ]
-      },
-      {
-        "name": "Dead Pine Tree",
-        "type": "prop",
-        "hp": 15,
-        "tags": [
-          "wood",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_6320",
-        "pos": [
-          39,
-          27
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_2484",
-        "pos": [
-          34,
-          25
-        ]
-      },
-      {
-        "name": "Frozen Bush",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "plant",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_7067",
-        "pos": [
-          29,
-          19
-        ]
-      },
-      {
-        "name": "Frozen Bush",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "plant",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_9954",
-        "pos": [
-          32,
-          17
-        ]
-      },
-      {
-        "name": "Dead Pine Tree",
-        "type": "prop",
-        "hp": 15,
-        "tags": [
-          "wood",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_8062",
-        "pos": [
-          34,
-          19
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_5942",
-        "pos": [
-          31,
-          16
-        ]
-      },
-      {
-        "name": "Ice Spider",
-        "type": "hostile",
-        "hp": 10,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 6,
-          "max_stamina": 6,
-          "focus": 4,
-          "max_focus": 4
-        },
-        "skills": [
-          "Calculated Trap"
-        ],
-        "inventory": [
-          "Venom Gland"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "cold",
-          "venomous"
-        ],
-        "id": "ent_6608",
-        "pos": [
-          32,
-          18
-        ]
-      },
-      {
-        "name": "Frost Wolf",
-        "type": "hostile",
-        "hp": 18,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Finesse",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 12,
-          "max_stamina": 12,
-          "focus": 2,
-          "max_focus": 2
-        },
-        "skills": [
-          "Predator's Latch"
-        ],
-        "inventory": [
-          "Frost-Wolf Pelt"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "flesh",
-          "cold"
-        ],
-        "id": "ent_4738",
-        "pos": [
-          30,
-          19
-        ]
-      },
-      {
-        "name": "Ice Spider",
-        "type": "hostile",
-        "hp": 10,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 6,
-          "max_stamina": 6,
-          "focus": 4,
-          "max_focus": 4
-        },
-        "skills": [
-          "Calculated Trap"
-        ],
-        "inventory": [
-          "Venom Gland"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "cold",
-          "venomous"
-        ],
-        "id": "ent_1406",
-        "pos": [
-          33,
-          21
-        ]
-      },
-      {
-        "name": "Frozen Bush",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "plant",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_4210",
-        "pos": [
-          30,
-          16
-        ]
-      },
-      {
-        "name": "Ice Spider",
-        "type": "hostile",
-        "hp": 10,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 6,
-          "max_stamina": 6,
-          "focus": 4,
-          "max_focus": 4
-        },
-        "skills": [
-          "Calculated Trap"
-        ],
-        "inventory": [
-          "Venom Gland"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "cold",
-          "venomous"
-        ],
-        "id": "ent_4148",
-        "pos": [
-          39,
-          45
-        ]
-      },
-      {
-        "name": "Ice Spider",
-        "type": "hostile",
-        "hp": 10,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 6,
-          "max_stamina": 6,
-          "focus": 4,
-          "max_focus": 4
-        },
-        "skills": [
-          "Calculated Trap"
-        ],
-        "inventory": [
-          "Venom Gland"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "cold",
-          "venomous"
-        ],
-        "id": "ent_5620",
-        "pos": [
-          42,
-          44
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_6342",
-        "pos": [
-          44,
-          43
-        ]
-      },
-      {
-        "name": "Dead Pine Tree",
-        "type": "prop",
-        "hp": 15,
-        "tags": [
-          "wood",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_2952",
-        "pos": [
-          42,
-          41
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_6470",
-        "pos": [
-          45,
-          39
-        ]
-      },
-      {
-        "name": "Wildling Scout",
-        "type": "hostile",
-        "hp": 15,
-        "species": "Human",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 10,
-          "max_stamina": 10,
-          "focus": 10,
-          "max_focus": 10
-        },
-        "skills": [
-          "The Angle"
-        ],
-        "tags": [
-          "human",
-          "hostile",
-          "flesh"
-        ],
-        "id": "ent_4514",
-        "pos": [
-          46,
-          23
-        ]
-      },
-      {
-        "name": "Dead Pine Tree",
-        "type": "prop",
-        "hp": 15,
-        "tags": [
-          "wood",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_4502",
-        "pos": [
-          43,
-          26
-        ]
-      },
-      {
-        "name": "Ice Spider",
-        "type": "hostile",
-        "hp": 10,
-        "species": "Beast",
-        "tracks": {
-          "offense": "Awareness",
-          "defense": "Reflexes"
-        },
-        "resources": {
-          "stamina": 6,
-          "max_stamina": 6,
-          "focus": 4,
-          "max_focus": 4
-        },
-        "skills": [
-          "Calculated Trap"
-        ],
-        "inventory": [
-          "Venom Gland"
-        ],
-        "tags": [
-          "beast",
-          "hostile",
-          "cold",
-          "venomous"
-        ],
-        "id": "ent_9990",
-        "pos": [
-          44,
-          25
-        ]
-      },
-      {
-        "name": "Frozen Bush",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "plant",
-          "cold",
-          "solid"
-        ],
-        "id": "ent_8064",
-        "pos": [
-          48,
-          25
-        ]
-      },
-      {
-        "name": "Bloody Satchel",
-        "type": "prop",
-        "hp": 5,
-        "tags": [
-          "cloth",
-          "leather",
-          "story_seed"
-        ],
-        "id": "seed_6611",
-        "pos": [
-          21,
-          29
-        ]
-      }
-    ],
-    "latest_action": {},
-    "ai_directive": ""
+      "in_combat": false,
+      "encounter_mode": "EXPLORATION",
+      "active_incident": false,
+      "clue_tracker": []
+    }
   },
   "parent_map_state": null,
   "combat_log": [
-    "Director: Welcome to Shatterlands."
-  ],
-  "latest_action": {
-    "actor": "Captain Jax",
-    "action": "Move",
-    "target": "27,2",
-    "mechanical_result": "Moved."
-  }
+    "Director: Welcome to Shatterlands.",
+    "\ud83d\udde3\ufe0f Jax uses Persuade on Senator Vaelen...",
+    "   \u21b3 STRUCK NERVE: 21 composure reduced! BROKEN.",
+    "   \u21b3 \ud83c\udff3\ufe0f Senator Vaelen's will scales. They are BROKEN.",
+    "\ud83d\udde3\ufe0f Jax uses Beguile on Senator Vaelen...",
+    "   \u21b3 STRUCK NERVE: 16 composure reduced! BROKEN.",
+    "   \u21b3 \ud83c\udff3\ufe0f Senator Vaelen's will scales. They are BROKEN."
+  ]
 }

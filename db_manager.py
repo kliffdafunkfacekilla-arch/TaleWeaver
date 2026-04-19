@@ -6,12 +6,25 @@ import os
 DB_NAME = "state/shatterlands.db"
 
 def init_db():
-    """Creates the vault for the world simulation if it doesn't exist."""
     os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # TABLE 1: The World Map (Stores every chunk Jax visits)
+    # Core World Map (Macro)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS layer4_macro_map (
+            coord_id TEXT PRIMARY KEY,
+            biome TEXT,
+            faction TEXT,
+            location TEXT,
+            chaos_level INTEGER DEFAULT 0,
+            elevation INTEGER DEFAULT 0,
+            resource_wealth INTEGER DEFAULT 50,
+            fractal_dna TEXT
+        )
+    ''')
+
+    # LOCAL MAP CHUNKS (THE DIORAMA STATE)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS map_chunks (
             chunk_x INTEGER,
@@ -21,95 +34,84 @@ def init_db():
             PRIMARY KEY (chunk_x, chunk_y)
         )
     ''')
-    
-    # TABLE 2: Global Metadata (The Cosmic Clock, Faction Reputations, etc.)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS global_meta (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    ''')
-    
-    # TABLE 3: Lore Entries (Aligned with World Builder)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS lore_entries (
-            title TEXT PRIMARY KEY,
-            category TEXT,
-            content TEXT,
-            parameters TEXT
-        )
-    ''')
 
-    # TABLE 4: Layer 4 Macro Map (The Overworld Grid)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS layer4_macro_map (
-            coord_id TEXT PRIMARY KEY,
-            biome TEXT,
-            faction TEXT,
-            location TEXT,
-            chaos_level INTEGER,
-            elevation INTEGER DEFAULT 0
-        )
-    ''')
-    # Migration: add elevation column to pre-existing databases
+    # Add migration for resource_wealth/chaos_level if they didn't exist
     cursor.execute("PRAGMA table_info(layer4_macro_map)")
     existing_cols = [col[1] for col in cursor.fetchall()]
-    if 'elevation' not in existing_cols:
-        cursor.execute("ALTER TABLE layer4_macro_map ADD COLUMN elevation INTEGER DEFAULT 0")
+    if 'resource_wealth' not in existing_cols:
+        cursor.execute("ALTER TABLE layer4_macro_map ADD COLUMN resource_wealth INTEGER DEFAULT 50")
+    if 'chaos_level' not in existing_cols:
+        cursor.execute("ALTER TABLE layer4_macro_map ADD COLUMN chaos_level INTEGER DEFAULT 0")
+
+    # Add migration for new 4X tables
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [t[0] for t in cursor.fetchall()]
+    if 'buildings' not in tables:
+        cursor.execute('CREATE TABLE settlements (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, x INTEGER, y INTEGER, happiness INTEGER DEFAULT 70, population INTEGER DEFAULT 100)')
+        cursor.execute('CREATE TABLE buildings (id INTEGER PRIMARY KEY AUTOINCREMENT, settlement_id INTEGER, building_type TEXT, defense_bonus INTEGER DEFAULT 0, resource_generated TEXT, yield_per_pulse INTEGER, FOREIGN KEY(settlement_id) REFERENCES settlements(id))')
+    if 'resource_nodes' not in tables:
+        cursor.execute('CREATE TABLE resource_nodes (id INTEGER PRIMARY KEY AUTOINCREMENT, x INTEGER, y INTEGER, resource_type TEXT, remaining_supply INTEGER)')
+    if 'trade_routes' not in tables:
+        cursor.execute('CREATE TABLE trade_routes (id INTEGER PRIMARY KEY AUTOINCREMENT, source_settlement_id INTEGER, target_settlement_id INTEGER, transport_tech TEXT, goods_type TEXT, caravan_status TEXT DEFAULT \'In Transit\', FOREIGN KEY(source_settlement_id) REFERENCES settlements(id), FOREIGN KEY(target_settlement_id) REFERENCES settlements(id))')
+    if 'weather_fronts' not in tables:
+        cursor.execute('CREATE TABLE weather_fronts (id INTEGER PRIMARY KEY AUTOINCREMENT, x FLOAT, y FLOAT, storm_type TEXT, intensity INTEGER, lifespan INTEGER DEFAULT 5)')
     
     conn.commit()
     conn.close()
 
-def save_chunk(chunk_x, chunk_y, state_data):
-    """Packages the current map state and saves it into the database."""
+def reset_world():
+    """Wipes all persistent data and re-initializes the database."""
+    print("[DATABASE] Resetting world state...")
+    if os.path.exists(DB_NAME):
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        tables = cursor.fetchall()
+        for table in tables:
+            cursor.execute(f"DROP TABLE {table[0]}")
+        conn.commit()
+        conn.close()
+    
+    if os.path.exists("local_map_state.json"):
+        os.remove("local_map_state.json")
+        
+    init_db()
+    print("[DATABASE] World re-initialized.")
+
+def save_chunk(x, y, state):
+    """Saves a local map chunk to the persistent vault."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    # Extract the clock time so we know exactly when Jax was last here
-    clock = state_data.get("meta", {}).get("clock", 0)
-    data_str = json.dumps(state_data)
-    
-    # UPSERT: Insert it if it's new, update it if it already exists
+    data = json.dumps(state)
+    clock = state.get("local_map_state", {}).get("meta", {}).get("clock", 0)
     cursor.execute('''
-        INSERT INTO map_chunks (chunk_x, chunk_y, data_json, last_visited_clock)
+        INSERT OR REPLACE INTO map_chunks (chunk_x, chunk_y, data_json, last_visited_clock)
         VALUES (?, ?, ?, ?)
-        ON CONFLICT(chunk_x, chunk_y) 
-        DO UPDATE SET data_json=excluded.data_json, last_visited_clock=excluded.last_visited_clock
-    ''', (chunk_x, chunk_y, data_str, clock))
-    
+    ''', (x, y, data, clock))
     conn.commit()
     conn.close()
 
-def load_chunk(chunk_x, chunk_y):
-    """Retrieves a specific map chunk from the database. Returns None if unexplored."""
+def load_chunk(x, y):
+    """Loads a local map chunk from the persistent vault."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    cursor.execute('SELECT data_json FROM map_chunks WHERE chunk_x=? AND chunk_y=?', (chunk_x, chunk_y))
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result:
-        return json.loads(result[0])
-    return None
-
-def get_macro_cell(x, y):
-    """Retrieves macro map data for a specific coordinate from Layer 4."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('SELECT biome, faction, location, chaos_level, elevation FROM layer4_macro_map WHERE coord_id=?', (f"{x},{y}",))
+    cursor.execute("SELECT data_json FROM map_chunks WHERE chunk_x = ? AND chunk_y = ?", (x, y))
     row = cursor.fetchone()
     conn.close()
     if row:
-        return {"biome": row[0], "faction": row[1], "location": row[2], "chaos_level": row[3], "elevation": row[4] if row[4] is not None else 0}
+        return json.loads(row[0])
     return None
 
-def reset_world():
-    """Wipes the database for a New Game."""
-    if os.path.exists(DB_NAME):
-        # We only remove the DB file itself, but keep the directory
-        os.remove(DB_NAME)
-    init_db()
+def get_macro_cell(x, y):
+    """Retrieves the macro-level world state for a specific L4 coordinate."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT biome, chaos_level, fractal_dna FROM layer4_macro_map WHERE coord_id = ?", (f"{x},{y}",))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {"biome": row[0], "chaos": row[1], "dna": row[2]}
+    return None
 
-# Run this once when the file is imported to ensure the DB exists
-init_db()
+if __name__ == "__main__":
+    init_db()

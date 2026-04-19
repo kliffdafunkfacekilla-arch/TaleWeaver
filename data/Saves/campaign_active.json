@@ -1,0 +1,31 @@
+{
+    "arc_name": "Rust and Rebellion",
+    "locked_goal": "Recover the stolen Iron Caldera blueprints for the Aether-Skiff engine",
+    "nodes": [
+        {
+            "id": 1.5,
+            "type": "consequence",
+            "task": "Grind-Canyons Tavern is now a hostile environment. The local blacksmith has been threatened by the unknown figure, who demands to know who 'the one responsible' is for the informant's death. The blacksmith is now reluctant to provide any further information about the meeting and its attendees, fearing retaliation. The player must navigate this new danger to get the blacksmith to reconsider their safety concerns.",
+            "status": "pending"
+        },
+        {
+            "id": 1,
+            "type": "investigation",
+            "task": "Gather information about a suspicious meeting between a local blacksmith and an unknown figure in Grind-Canyons",
+            "status": "pending"
+        },
+        {
+            "id": 2,
+            "type": "exploration",
+            "task": "Explore the abandoned mine shaft beneath Grind-Canyons to uncover evidence of a secret meeting between the blacksmith and his mysterious contact",
+            "status": "locked"
+        },
+        {
+            "id": 3,
+            "type": "combat",
+            "task": "Infiltrate an Iron Caldera patrol outpost in Grind-Canyons, fighting off guards to obtain the stolen blueprints from a captured engineer",
+            "status": "locked"
+        }
+    ],
+    "current_node_index": 0
+}

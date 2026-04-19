@@ -5,12 +5,11 @@ import re
 import os
 import time
 
-# OSTRAKA WORLD ARCHITECT (STYLIZED & STABLE)
+# OSTRAKA WORLD ARCHITECT (ROBUST PLANETARY MODE)
 MODEL = "llama3.1:8b-instruct-q3_K_L"
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 DB_PATH = "state/shatterlands.db"
-VAULT_PATH = "./Shatterlands"
-AI_OPTIONS = {"temperature": 0.4, "num_ctx": 4096}
+AI_OPTIONS = {"temperature": 0.4, "num_ctx": 8192}
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -22,51 +21,10 @@ def init_db():
         river_path TEXT, river_start_x INTEGER, river_start_y INTEGER, 
         river_end_x INTEGER, river_end_y INTEGER, river_stability TEXT,
         height_anchor TEXT, zoom_seed TEXT, 
-        faction TEXT, sub_faction TEXT, location TEXT, loc_sub_x INTEGER, loc_sub_y INTEGER)''')
+        faction TEXT, sub_faction TEXT, location TEXT, loc_sub_x INTEGER, loc_sub_y INTEGER,
+        chaos_level INTEGER DEFAULT 0, resource_wealth INTEGER DEFAULT 50,
+        fractal_dna TEXT)''')
     conn.commit()
-    conn.close()
-
-def ingest_vault(path):
-    print("--- Ingesting Obsidian Vault ---")
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    for root, _, files in os.walk(path):
-        cat = os.path.basename(root)
-        for f in files:
-            if f.endswith(".md"):
-                name = f[:-3]
-                with open(os.path.join(root, f), "r", encoding="utf-8") as file:
-                    content = file.read()
-                cursor.execute("INSERT OR IGNORE INTO entities (name, category, raw_lore) VALUES (?, ?, ?)", (name, cat, content))
-    conn.commit()
-    conn.close()
-
-def get_chroma_collection():
-    try:
-        import chromadb
-        client = chromadb.PersistentClient(path="./data/lore/.chroma")
-        return client.get_or_create_collection(name="ostraka_lore")
-    except: return None
-
-def vectorize_all_lore():
-    print("--- Verifying Vector Memory ---")
-    collection = get_chroma_collection()
-    if not collection: return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, category, raw_lore FROM entities")
-    rows = cursor.fetchall()
-    all_docs, all_metas, all_ids = [], [], []
-    for name, cat, lore in rows:
-        blocks = [b.strip() for b in lore.split("\n\n") if b.strip()]
-        for b in blocks:
-            all_docs.append(f"[{cat} - {name}]\n{b}")
-            all_metas.append({"title": name, "category": cat})
-            all_ids.append(f"{name}_chunk_{len(all_ids)}")
-    if all_docs:
-        batch_size = 50
-        for i in range(0, len(all_docs), batch_size):
-            collection.upsert(documents=all_docs[i:i+batch_size], metadatas=all_metas[i:i+batch_size], ids=all_ids[i:i+batch_size])
     conn.close()
 
 def extract_json(text):
@@ -75,65 +33,61 @@ def extract_json(text):
     if m: return m.group(0).strip()
     return text.strip()
 
-def process_build_list_via_rag():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, category FROM entities WHERE data_json IS NULL")
-    rows = cursor.fetchall()
-    collection = get_chroma_collection()
-    if not rows or not collection:
-        print("--- Lore Completion: 100% ---")
-        conn.close(); return
-    for name, category in rows:
-        try:
-            results = collection.query(query_texts=[name], n_results=3)
-            context = "\n---\n".join(results['documents'][0])
-            payload = {"model": MODEL, "messages": [{"role": "system", "content": "Return raw JSON."}, {"role": "user", "content": f"Context for {name}:\n{context}\nKeys: 'behavior', 'threat_tier', 'preferred_biome'."}], "options": AI_OPTIONS, "stream": False}
-            response = requests.post(OLLAMA_URL, json=payload, timeout=30)
-            raw_text = extract_json(response.json().get('message', {}).get('content', '{}'))
-            cursor.execute("UPDATE entities SET data_json = ? WHERE name = ?", (raw_text, name))
-            conn.commit()
-            print(f"Syncing: {name}")
-        except: pass
-    conn.close()
-
 def generate_macro_map():
-    print("\n--- Architecting World Grid (Final Healing Run) ---")
+    print("\n--- Repairing Planetary Genome ---")
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM entities WHERE category LIKE '%faction%'"); factions = [r[0] for r in cursor.fetchall()]
-    cursor.execute("SELECT name FROM entities WHERE category LIKE '%location%'"); locations = [r[0] for r in cursor.fetchall()]
 
     def safe_str(val): return str(val) if val else ""
     def safe_int(val, default=0): 
         try: return int(val)
         except: return default
+    def safe_float(val, default=0.5):
+        try: return float(val)
+        except: return default
 
-    for y in range(10):
-        for x_start in range(0, 10, 2):
-            cursor.execute("SELECT count(*) FROM map_layer4 WHERE y = ? AND x IN (?, ?)", (y, x_start, x_start + 1))
-            if cursor.fetchone()[0] == 2: continue
+    # TARGETED PASS: Prioritize the Hearth [5,5]
+    coords_to_process = [(5,5)]
+    # Also add a few neighbors for scale testing
+    coords_to_process.extend([(0,0), (9,9)]) 
 
-            for attempt in range(3):
-                print(f"Architecting Row {y}, Cells ({x_start}-{x_start+1})... (Attempt {attempt+1})")
-                prompt = (f"Architect 2 cells for Row {y} (x={x_start} and x={x_start+1}).\nFactions: {factions[:5]}...\nLocations: {locations[:5]}...\n"
-                          f"Return exactly 2 JSON objects in a list. NO COMMENTARY.")
-                try:
-                    res = requests.post(OLLAMA_URL, json={"model": MODEL, "messages": [{"role": "system", "content": "Return ONLY a JSON array of 2 objects."}, {"role": "user", "content": prompt}], "options": AI_OPTIONS, "stream": False}, timeout=45)
-                    data = json.loads(extract_json(res.json().get('message', {}).get('content', '[]')))
-                    for i, cell in enumerate(data):
-                        # FORCE COORDINATES TO PREVENT OVERWRITES
-                        target_x = x_start + i
-                        if target_x > x_start + 1: continue 
-                        p = (f"{target_x},{y}", target_x, y, safe_str(cell.get('n_biome')), safe_str(cell.get('s_biome')), safe_str(cell.get('e_biome')), safe_str(cell.get('w_biome')), safe_str(cell.get('river_path')), safe_int(cell.get('river_start_x')), safe_int(cell.get('river_start_y')), safe_int(cell.get('river_end_x')), safe_int(cell.get('river_end_y')), safe_str(cell.get('river_stability')), safe_str(cell.get('height_anchor')), safe_str(cell.get('zoom_seed')), safe_str(cell.get('faction')), safe_str(cell.get('sub_faction')), safe_str(cell.get('location')), safe_int(cell.get('loc_sub_x')), safe_int(cell.get('loc_sub_y')))
-                        cursor.execute('''INSERT OR REPLACE INTO map_layer4 (coord_id, x, y, n_biome, s_biome, e_biome, w_biome, river_path, river_start_x, river_start_y, river_end_x, river_end_y, river_stability, height_anchor, zoom_seed, faction, sub_faction, location, loc_sub_x, loc_sub_y) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', p)
-                    conn.commit()
-                    print(f"Success: Row {y}, Cells ({x_start}-{x_start+1}) saved.")
-                    break
-                except Exception as e:
-                    print(f"Attempt failed: {e}"); time.sleep(2.0)
+    for tx, ty in coords_to_process:
+        print(f"Synthesizing Planetary DNA for {tx},{ty}...")
+        prompt = (f"Architect 1 cell at (x={tx}, y={ty}).\n"
+                  f"Return EXACTLY 1 JSON object in a list: [{{...}}]. Reply ONLY with JSON.\n"
+                  f"FRACTAL_DNA REQUIREMENTS (PLANETARY scale):\n"
+                  f"- geo_seed: unique int\n"
+                  f"- geo_frequency: float (0.01 to 0.1)\n"
+                  f"- moisture_constant: float (0.0 to 1.0)\n"
+                  f"- heat_constant: float (0.0 to 1.0)\n"
+                  f"- n_biome, faction (labels)\n")
+        
+        try:
+            res = requests.post(OLLAMA_URL, json={"model": MODEL, "messages": [{"role": "system", "content": "You are a Planetary Architect. Reply ONLY with JSON array."}, {"role": "user", "content": prompt}], "options": AI_OPTIONS, "stream": False}, timeout=120)
+            json_text = extract_json(res.json().get('message', {}).get('content', '[]'))
+            data = json.loads(json_text)
+            for cell in data:
+                # ROBUST DNA EXTRACTION
+                # Check for nested OR flat keys
+                dna_src = cell.get('fractal_dna', cell)
+                dna = {
+                    "geo_seed": safe_int(dna_src.get('geo_seed'), hash(f"{tx},{ty}")),
+                    "geo_frequency": safe_float(dna_src.get('geo_frequency'), 0.05),
+                    "moisture_constant": safe_float(dna_src.get('moisture_constant'), 0.5),
+                    "heat_constant": safe_float(dna_src.get('heat_constant'), 0.5)
+                }
+                dna_str = json.dumps(dna)
+                
+                p = (f"{tx},{ty}", tx, ty, safe_str(cell.get('n_biome')), "none", "none", "none", "none", 0, 0, 0, 0, "stable", "sea_level", "0", safe_str(cell.get('faction')), "sub", "none", 0, 0, 0, 50, dna_str)
+                cursor.execute('''INSERT OR REPLACE INTO map_layer4 (coord_id, x, y, n_biome, s_biome, e_biome, w_biome, river_path, river_start_x, river_start_y, river_end_x, river_end_y, river_stability, height_anchor, zoom_seed, faction, sub_faction, location, loc_sub_x, loc_sub_y, chaos_level, resource_wealth, fractal_dna) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', p)
+            conn.commit()
+            print(f"Success: Planetary DNA for {tx},{ty} synthesized and persisted.")
+        except Exception as e:
+            print(f"Synthesis failed for {tx},{ty}: {e}")
+            
     conn.close()
 
 if __name__ == "__main__":
     init_db(); generate_macro_map()
-    print("\n[COMPLETE] World finalized.")
+    print("\n[COMPLETE] Planetary Genome Repaired for Hearth.")

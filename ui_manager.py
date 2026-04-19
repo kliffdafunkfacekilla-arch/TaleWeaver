@@ -1,10 +1,15 @@
 import pygame
 import entities
+import random
 
 # Global state for the UI menu
 UI_STATE = {
     "active_tab": "Character",
-    "context_menu": {"active": False, "x": 0, "y": 0, "item": None, "options": []}
+    "context_menu": {"active": False, "x": 0, "y": 0, "item": None, "options": []},
+    "console_history": [],
+    "input_text": "",
+    "cursor_visible": True,
+    "last_cursor_blink": 0
 }
 
 def draw_text(screen, text, x, y, font, color):
@@ -12,200 +17,240 @@ def draw_text(screen, text, x, y, font, color):
     surf = font.render(text, True, color)
     screen.blit(surf, (x, y))
 
-def draw_multi_tab_menu(screen, map_data, font, title_font, COLORS, WINDOW_WIDTH, WINDOW_HEIGHT):
-    player = next((e for e in map_data.get("entities", []) if e["type"] == "player"), None)
+def draw_vitals_bar(screen, x, y, width, height, current, maximum, color, label, font):
+    """Draws a premium looking progress bar with a label and value."""
+    pygame.draw.rect(screen, (30, 30, 35), (x, y, width, height), border_radius=4)
+    fill_w = int((current / maximum) * width) if maximum > 0 else 0
+    if fill_w > 0:
+        pygame.draw.rect(screen, color, (x, y, fill_w, height), border_radius=4)
+        pygame.draw.rect(screen, [max(0, c - 40) for c in color], (x, y + height // 2, fill_w, height // 2), border_radius=4)
+    pygame.draw.rect(screen, (60, 60, 70), (x, y, width, height), 1, border_radius=4)
+    l_surf = font.render(label, True, (200, 200, 200))
+    v_surf = font.render(f"{current}/{maximum}", True, (255, 255, 255))
+    screen.blit(l_surf, (x + 5, y - 20))
+    screen.blit(v_surf, (x + width - v_surf.get_width() - 5, y - 20))
+
+def draw_sidebar(screen, state, rect, font, title_font, COLORS):
+    """Renders the persistent character sidebar on the right."""
+    player = next((e for e in state["local_map_state"].get("entities", []) if e["type"] == "player"), None)
     if not player: return []
-    
+
     clickable_zones = []
+    bg = pygame.Surface((rect.width, rect.height))
+    bg.fill((15, 15, 20)) 
+    screen.blit(bg, rect)
+    pygame.draw.line(screen, COLORS["menu_border"], (rect.x, rect.y), (rect.x, rect.bottom), 2)
+
+    header_y = rect.y + 20
+    screen.blit(title_font.render(player["name"].upper(), True, COLORS["title"]), (rect.x + 25, header_y))
+    pygame.draw.line(screen, COLORS["title"], (rect.x + 25, header_y + 35), (rect.right - 25, header_y + 35), 1)
+
+    v_y = header_y + 65
+    bar_w = rect.width - 50
+    draw_vitals_bar(screen, rect.x + 25, v_y, bar_w, 12, player.get("hp", 0), player.get("max_hp", 20), COLORS["hostile"], "VITALITY (HP)", font)
     
-    # Dark Overlay
-    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-    overlay.set_alpha(240); overlay.fill((10, 10, 15))
-    screen.blit(overlay, (0, 0))
-    
-    # Main UI Window
-    sheet_rect = pygame.Rect(50, 50, WINDOW_WIDTH - 100, WINDOW_HEIGHT - 100)
-    pygame.draw.rect(screen, COLORS["menu_bg"], sheet_rect)
-    pygame.draw.rect(screen, COLORS["title"], sheet_rect, 2)
-    
-    # Header
-    screen.blit(title_font.render(player["name"], True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 20))
-    
-    # Tab Buttons
-    tabs = ["Character", "Inventory", "Skills"]
-    tab_w = 140; tab_h = 30
+    # Composure Bar (Social HP)
+    comp_max = entities.get_max_composure(player)
+    draw_vitals_bar(screen, rect.x + 25, v_y + 45, bar_w, 12, player.get("composure", comp_max), comp_max, (200, 100, 255), "COMPOSURE (C)", font)
+
+    stamina_max = entities.get_max_stamina(player)
+    focus_max = entities.get_max_focus(player)
+    draw_vitals_bar(screen, rect.x + 25, v_y + 90, bar_w, 12, player["resources"].get("stamina", 0), stamina_max, COLORS["player"], "STAMINA (S)", font)
+    draw_vitals_bar(screen, rect.x + 25, v_y + 135, bar_w, 12, player["resources"].get("focus", 0), focus_max, COLORS["focus"], "FOCUS (F)", font)
+
+    t_y = v_y + 175
+    screen.blit(font.render("STATUS TAGS:", True, (150, 150, 150)), (rect.x + 25, t_y))
+    tags = player.get("tags", [])
+    tx, ty = rect.x + 25, t_y + 25
+    for tag in tags:
+        tag_surf = font.render(f"[{tag.upper()}]", True, COLORS["title"] if tag in ["unbreakable", "hostile"] else COLORS["text"])
+        if tx + tag_surf.get_width() > rect.right - 25:
+            tx = rect.x + 25; ty += 22
+        screen.blit(tag_surf, (tx, ty))
+        tx += tag_surf.get_width() + 10
+
+    tab_y = ty + 40
+    tabs = ["Stats", "Items", "Skills", "Clues"]
+    tab_w = (rect.width - 50) // 4
     for i, tab in enumerate(tabs):
-        tab_rect = pygame.Rect(sheet_rect.x + 300 + (i * (tab_w + 10)), sheet_rect.y + 25, tab_w, tab_h)
-        bg_color = COLORS["menu_hover"] if UI_STATE["active_tab"] == tab else COLORS["ui_bg"]
-        pygame.draw.rect(screen, bg_color, tab_rect)
+        tab_rect = pygame.Rect(rect.x + 25 + (i * tab_w), tab_y, tab_w, 30)
+        is_active = (UI_STATE["active_tab"] == tab) or (UI_STATE["active_tab"] == "Character" and tab == "Stats") or (UI_STATE["active_tab"] == "Inventory" and tab == "Items") or (UI_STATE["active_tab"] == "Investigation" and tab == "Clues")
+        bg_col = COLORS["menu_hover"] if is_active else (25, 25, 30)
+        pygame.draw.rect(screen, bg_col, tab_rect)
         pygame.draw.rect(screen, COLORS["menu_border"], tab_rect, 1)
-        text_surf = font.render(tab, True, COLORS["text"])
-        screen.blit(text_surf, text_surf.get_rect(center=tab_rect.center))
-        clickable_zones.append({"rect": tab_rect, "action": "switch_tab", "target": tab})
+        txt = font.render(tab, True, COLORS["text"] if is_active else (150, 150, 150))
+        screen.blit(txt, txt.get_rect(center=tab_rect.center))
+        internal_tab = "Character" if tab == "Stats" else ("Inventory" if tab == "Items" else ("Skills" if tab == "Skills" else "Investigation"))
+        clickable_zones.append({"rect": tab_rect, "action": "switch_tab", "target": internal_tab})
 
-    pygame.draw.line(screen, COLORS["menu_border"], (sheet_rect.x + 20, sheet_rect.y + 60), (sheet_rect.right - 20, sheet_rect.y + 60))
-
-    # Render Content Based on Active Tab
+    content_rect = pygame.Rect(rect.x + 10, tab_y + 40, rect.width - 20, rect.height - (tab_y - rect.y) - 60)
     if UI_STATE["active_tab"] == "Character":
-        _draw_character_tab(screen, player, sheet_rect, font, COLORS, clickable_zones)
+        _draw_sidebar_stats(screen, player, content_rect, font, COLORS)
     elif UI_STATE["active_tab"] == "Inventory":
-        _draw_inventory_tab(screen, player, sheet_rect, font, COLORS, clickable_zones)
+        _draw_sidebar_inventory(screen, player, content_rect, font, COLORS, clickable_zones)
     elif UI_STATE["active_tab"] == "Skills":
-        _draw_skills_tab(screen, player, sheet_rect, font, COLORS, clickable_zones)
+        _draw_sidebar_skills(screen, player, content_rect, font, COLORS, clickable_zones)
+    elif UI_STATE["active_tab"] == "Investigation":
+        _draw_sidebar_clues(screen, state, content_rect, font, COLORS)
 
-    # Sub-Context Menu
-    if UI_STATE["context_menu"]["active"]:
-        cm = UI_STATE["context_menu"]
-        menu_rect = pygame.Rect(cm["x"], cm["y"], 120, len(cm["options"]) * 30)
-        pygame.draw.rect(screen, COLORS["menu_bg"], menu_rect)
-        pygame.draw.rect(screen, COLORS["menu_border"], menu_rect, 2)
-        for i, opt in enumerate(cm["options"]):
-            opt_rect = pygame.Rect(cm["x"], cm["y"] + (i * 30), 120, 30)
-            if opt_rect.collidepoint(pygame.mouse.get_pos()): pygame.draw.rect(screen, COLORS["menu_hover"], opt_rect)
-            screen.blit(font.render(opt, True, COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
-            clickable_zones.append({"rect": opt_rect, "action": "context_action", "item": cm["item"], "choice": opt})
-
-    screen.blit(font.render("Press 'C' or 'ESC' to close", True, (150, 150, 150)), (sheet_rect.centerx - 100, sheet_rect.bottom - 30))
     return clickable_zones
 
-def draw_combat_log(screen, state, rect, font, title_font, COLORS):
-    """Renders the scrolling combat log on the right sidebar."""
-    # Semi-transparent background
-    bg = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-    bg.fill((25, 25, 30, 210))
-    screen.blit(bg, rect)
-    pygame.draw.rect(screen, COLORS["menu_border"], rect, 1)
+def _draw_sidebar_stats(screen, player, rect, font, COLORS):
+    stats = player.get("stats", {})
+    y = rect.y + 10
+    screen.blit(font.render("--- THE BODY ---", True, COLORS["title"]), (rect.x + 15, y)); y += 25
+    for s in ["Might", "Endurance", "Reflexes", "Finesse", "Vitality", "Fortitude"]:
+        val = stats.get(s, 0)
+        screen.blit(font.render(f"{s}:", True, (180, 180, 180)), (rect.x + 25, y))
+        screen.blit(font.render(str(val), True, COLORS["text"]), (rect.x + 150, y))
+        y += 22
+    y += 10
+    screen.blit(font.render("--- THE MIND ---", True, COLORS["title"]), (rect.x + 15, y)); y += 25
+    for s in ["Knowledge", "Logic", "Awareness", "Intuition", "Charm", "Willpower"]:
+        val = stats.get(s, 0)
+        bonus = entities.get_gear_bonus(player, s)
+        total = val + bonus
+        screen.blit(font.render(f"{s}:", True, (180, 180, 180)), (rect.x + 25, y))
+        c = COLORS["npc"] if bonus > 0 else COLORS["text"]
+        screen.blit(font.render(f"{total}" + (f" (+{bonus})" if bonus > 0 else ""), True, c), (rect.x + 150, y))
+        y += 22
 
-    # Title
-    title_y = rect.y + 10
-    screen.blit(font.render("--- COMBAT & EVENT LOG ---", True, COLORS["title"]), (rect.x + 15, title_y))
-    pygame.draw.line(screen, (80, 80, 80), (rect.x + 10, title_y + 25), (rect.right - 10, title_y + 25), 1)
+def _draw_sidebar_inventory(screen, player, rect, font, COLORS, clickable_zones):
+    inv = player.get("inventory", [])
+    y = rect.y + 10
+    screen.blit(font.render("--- BACKPACK ---", True, COLORS["title"]), (rect.x + 15, y)); y += 30
+    if not inv:
+        screen.blit(font.render("(Empty)", True, (100, 100, 100)), (rect.x + 25, y))
+        return
+    for item in inv:
+        item_rect = pygame.Rect(rect.x + 15, y, rect.width - 30, 25)
+        if item_rect.collidepoint(pygame.mouse.get_pos()): pygame.draw.rect(screen, (40, 40, 50), item_rect)
+        screen.blit(font.render(f"\u2022 {item}", True, COLORS["text"]), (rect.x + 20, y + 2))
+        clickable_zones.append({"rect": item_rect, "action": "inventory_item", "item": item})
+        y += 28
 
-    # Messages
-    messages = state.get("combat_log", [])
-    if not messages: return
+def _draw_sidebar_skills(screen, player, rect, font, COLORS, clickable_zones):
+    skills = player.get("skills", [])
+    y = rect.y + 10
+    screen.blit(font.render("--- TACTICS & ANOMALIES ---", True, COLORS["title"]), (rect.x + 15, y)); y += 30
+    if not skills:
+        screen.blit(font.render("(No skills acquired)", True, (100, 100, 100)), (rect.x + 25, y))
+        return
+    for skill in skills:
+        skill_rect = pygame.Rect(rect.x + 15, y, rect.width - 30, 25)
+        if skill_rect.collidepoint(pygame.mouse.get_pos()): pygame.draw.rect(screen, (40, 40, 50), skill_rect)
+        screen.blit(font.render(f"\u25b6 {skill}", True, COLORS["player"]), (rect.x + 20, y + 2))
+        clickable_zones.append({"rect": skill_rect, "action": "skill_item", "skill": skill})
+        y += 28
 
-    y_cursor = rect.bottom - 25
+def _draw_sidebar_clues(screen, state, rect, font, COLORS):
+    clues = state["local_map_state"].get("meta", {}).get("clue_tracker", [])
+    y = rect.y + 10
+    screen.blit(font.render("--- LOGGED EVIDENCE ---", True, COLORS["focus"]), (rect.x + 15, y)); y += 35
+    if not clues:
+        screen.blit(font.render("(No clues discovered yet)", True, (100, 100, 100)), (rect.x + 25, y))
+        return
+    for clue in clues:
+        words = clue.split(' ')
+        wrapped_lines = []
+        line = ""
+        for w in words:
+            if font.size(line + " " + w)[0] < rect.width - 40: line += (" " + w if line else w)
+            else: wrapped_lines.append(line); line = w
+        wrapped_lines.append(line)
+        for l in wrapped_lines:
+            screen.blit(font.render(l, True, (200, 255, 200)), (rect.x + 20, y))
+            y += 20
+        y += 10 
+
+def draw_console(screen, messages, rect, font, COLORS, state=None):
+    """Renders the integrated message feed with mode-aware themeing."""
+    bg_col = (10, 10, 15)
+    border_col = COLORS["menu_border"]
+    mode_label = "EXPLORATION"
+    if state:
+        meta = state["local_map_state"].get("meta", {})
+        if meta.get("in_combat"):
+            mode = meta.get("encounter_mode", "COMBAT")
+            mode_label = mode.upper()
+            if mode == "COMBAT": bg_col = (20, 10, 10); border_col = (255, 50, 50)
+            elif mode == "SOCIAL_COMBAT": bg_col = (15, 10, 25); border_col = (200, 100, 255)
+            elif mode == "PUZZLE": bg_col = (10, 20, 15); border_col = (50, 255, 150)
+            elif mode == "MYSTERY": bg_col = (10, 15, 25); border_col = (100, 150, 255)
+    bg = pygame.Surface((rect.width, rect.height)); bg.fill(bg_col); screen.blit(bg, rect)
+    pygame.draw.line(screen, border_col, (rect.x, rect.y), (rect.right, rect.y), 2)
+    header_surf = font.render(f"// {mode_label} FEED", True, border_col)
+    screen.blit(header_surf, (rect.right - header_surf.get_width() - 20, rect.y + 10))
+    y_cursor = rect.bottom - 10
     line_height = 22
-    
-    # Render from newest (last) to oldest (upwards)
     for msg in reversed(messages):
-        if y_cursor < rect.y + 45: break # Panel full
-        
-        # Color coding based on prefix/content
+        if y_cursor < rect.y + 35: break
         msg_color = COLORS["text"]
-        if "⚔️" in msg: msg_color = (255, 100, 100) # Combat red
-        elif "🌀" in msg: msg_color = COLORS["focus"] # Anomaly purple
-        elif "↳" in msg: msg_color = (180, 180, 180) # Indented result
-        elif "📍" in msg: msg_color = COLORS["title"] # World gold
-        
-        # Word wrapping
+        if "\u2694\ufe0f" in msg: msg_color = (255, 120, 120)
+        elif "\ud83d\udde0\ufe0f" in msg: msg_color = (255, 255, 255)
+        elif "\ud83d\uddef\ufe0f" in msg: msg_color = (200, 150, 255) # Social
+        elif "\ud83c\udf10" in msg: msg_color = COLORS["focus"]
+        elif "\ud83d\udccd" in msg: msg_color = COLORS["title"]
+        elif "\ud83d\udcdc" in msg: msg_color = (200, 255, 200)
+        elif "\ud83d\udd0d" in msg: msg_color = (100, 200, 255)
+        elif "\ud83e\udde9" in msg: msg_color = (100, 255, 150)
+        elif "Director:" in msg: msg_color = (150, 150, 150)
         words = msg.split(' ')
         lines = []
-        current_line = ""
-        for word in words:
-            test_line = current_line + " " + word if current_line else word
-            if font.size(test_line)[0] < rect.width - 30:
-                current_line = test_line
-            else:
-                lines.append(current_line)
-                current_line = word
-        lines.append(current_line)
-        
-        # Draw wrapped lines from bottom to top
-        for line in reversed(lines):
-            if y_cursor < rect.y + 45: break
-            screen.blit(font.render(line, True, msg_color), (rect.x + 15, y_cursor))
+        curr = ""
+        for w in words:
+            if font.size(curr + " " + w)[0] < rect.width - 40: curr += (" " + w if curr else w)
+            else: lines.append(curr); curr = w
+        lines.append(curr)
+        for l in reversed(lines):
+            if y_cursor < rect.y + 35: break
+            screen.blit(font.render(l, True, msg_color), (rect.x + 20, y_cursor - line_height))
             y_cursor -= line_height
 
-def _draw_skills_tab(screen, player, sheet_rect, font, COLORS, clickable_zones):
-    screen.blit(font.render("--- ACQUIRED SKILLS (Tactics & Anomalies) ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 80))
-    player_skills = player.get("skills", [])
-    if not player_skills:
-        screen.blit(font.render("No skills acquired. Seek a Magistar.", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 120))
-        return
-    skills_db = entities.load_skills()
-    y_off = 120
-    for skill_name in player_skills:
-        skill_data = None; category = ""
-        for stat, data in skills_db.get("tactics", {}).items():
-            for tier, t_data in data.get("tiers", {}).items():
-                if t_data.get("name") == skill_name: skill_data = t_data; category = f"Tactic ({stat})"; break
-            if skill_data: break
-        if not skill_data:
-            for school, data in skills_db.get("anomalies", {}).items():
-                for tier, a_data in data.get("tiers", {}).items():
-                    if a_data.get("name") == skill_name: skill_data = a_data; category = f"Anomaly ({school})"; break
-                if skill_data: break
-        if skill_data:
-            skill_rect = pygame.Rect(sheet_rect.x + 20, sheet_rect.y + y_off, sheet_rect.width - 40, 30)
-            if skill_rect.collidepoint(pygame.mouse.get_pos()): pygame.draw.rect(screen, COLORS["menu_hover"], skill_rect)
-            screen.blit(font.render(f"{skill_name}", True, COLORS["text"]), (skill_rect.x + 5, skill_rect.y + 5))
-            screen.blit(font.render(f"[{category}]", True, (150, 150, 150)), (skill_rect.x + 250, skill_rect.y + 5))
-            cost = skill_data.get("cost", {})
-            pv = cost.get("primary", cost.get("stamina", 0)); sv = cost.get("secondary", cost.get("focus", 0))
-            xc = skill_rect.x + 500
-            if pv > 0: screen.blit(font.render(f"S:{pv}", True, COLORS["stamina"]), (xc, skill_rect.y + 5)); xc += 60
-            if sv > 0: screen.blit(font.render(f"F:{sv}", True, COLORS["focus"]), (xc, skill_rect.y + 5))
-            clickable_zones.append({"rect": skill_rect, "action": "skill_item", "skill": skill_name}); y_off += 35
+def draw_input_bar(screen, input_text, rect, font, COLORS, cursor_visible):
+    pygame.draw.rect(screen, (20, 20, 25), rect)
+    pygame.draw.rect(screen, COLORS["menu_border"], rect, 1)
+    prompt = "> "; p_surf = font.render(prompt, True, COLORS["title"])
+    screen.blit(p_surf, (rect.x + 10, rect.y + (rect.height - p_surf.get_height()) // 2))
+    text_x = rect.x + 10 + p_surf.get_width()
+    t_surf = font.render(input_text, True, COLORS["text"])
+    screen.blit(t_surf, (text_x, rect.y + (rect.height - t_surf.get_height()) // 2))
+    if cursor_visible:
+        cx = text_x + t_surf.get_width() + 2
+        pygame.draw.line(screen, COLORS["title"], (cx, rect.y + 8), (cx, rect.bottom - 8), 2)
 
-def _draw_character_tab(screen, player, sheet_rect, font, COLORS, clickable_zones):
-    hp_text = f"HP: {player.get('hp',0)}/{player.get('max_hp',0)}"; comp_text = f"Composure: {player.get('composure',0)}/{player.get('max_composure',0)}"
-    screen.blit(font.render(f"{hp_text}  |  {comp_text}", True, COLORS["hostile"]), (sheet_rect.x + 20, sheet_rect.y + 80))
-    res = player.get("resources", {}); stam_text = f"Stamina: {res.get('stamina',0)}/{entities.get_max_stamina(player)}"; foc_text = f"Focus: {res.get('focus',0)}/{entities.get_max_focus(player)}"
-    screen.blit(font.render(f"{stam_text}  |  {foc_text}", True, COLORS["player"]), (sheet_rect.x + 20, sheet_rect.y + 100))
-    screen.blit(font.render(f"A-Coin: {player.get('a_coin', 0)}  |  D-Dust: {player.get('d_dust', 0)}", True, COLORS["title"]), (sheet_rect.x + 480, sheet_rect.y + 80))
-    stats = player.get("stats", {})
-    screen.blit(font.render("--- THE BODY ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 140))
-    for i, s in enumerate(["Might", "Endurance", "Reflexes", "Finesse", "Vitality", "Fortitude"]):
-        screen.blit(font.render(f"{s}: {stats.get(s, 0)}", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 170 + (i * 25)))
-    screen.blit(font.render("--- THE MIND ---", True, COLORS["title"]), (sheet_rect.x + 250, sheet_rect.y + 140))
-    for i, s in enumerate(["Knowledge", "Logic", "Awareness", "Intuition", "Charm", "Willpower"]):
-        bv = stats.get(s, 0); b = entities.get_gear_bonus(player, s); vs = f"{bv + b} (+{b})" if b > 0 else f"{bv}"; c = COLORS["npc"] if b > 0 else COLORS["text"]
-        screen.blit(font.render(f"{s}: {vs}", True, c), (sheet_rect.x + 250, sheet_rect.y + 170 + (i * 25)))
-    dv = entities.get_derived_stats(player)
-    screen.blit(font.render("--- ADVANTAGE ---", True, COLORS["title"]), (sheet_rect.x + 480, sheet_rect.y + 140))
-    for i, (k, v) in enumerate(dv.items()): screen.blit(font.render(f"{k}: {v}", True, COLORS["player"]), (sheet_rect.x + 480, sheet_rect.y + 170 + (i * 25)))
-    pygame.draw.line(screen, COLORS["menu_border"], (sheet_rect.x + 20, sheet_rect.y + 340), (sheet_rect.right - 20, sheet_rect.y + 340))
-    screen.blit(font.render("--- ACTIVE LOADOUT (Click to Remove) ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 360))
-    eq = player.get("equipment", {}); y_off = 390
-    for slot in ["weapon", "armor", "accessory"]:
-        item = eq.get(slot, 'None'); text_surf = font.render(f"{slot.capitalize()}: {item}", True, COLORS["hostile"] if item != "None" else COLORS["text"])
-        rect = screen.blit(text_surf, (sheet_rect.x + 20, sheet_rect.y + y_off))
-        if item != "None": clickable_zones.append({"rect": rect, "action": "unequip", "slot": slot})
-        y_off += 25
-
-def _draw_inventory_tab(screen, player, sheet_rect, font, COLORS, clickable_zones):
-    screen.blit(font.render("--- INVENTORY (Right-Click Items) ---", True, COLORS["title"]), (sheet_rect.x + 20, sheet_rect.y + 80))
-    inv = player.get("inventory", [])
-    if not inv: screen.blit(font.render("Your bag is empty.", True, COLORS["text"]), (sheet_rect.x + 20, sheet_rect.y + 120)); return
-    db = entities.load_items(); cat_lists = {"Gear": [], "Consumables": [], "Misc": []}
-    for item in inv:
-        if item in db.get("weapons", {}) or item in db.get("armor", {}) or item in db.get("accessories", {}): cat_lists["Gear"].append(item)
-        elif item in ["Bandage", "Venom Gland", "Aether-Compass"]: cat_lists["Consumables"].append(item)
-        else: cat_lists["Misc"].append(item)
-    x_off = 20
-    for cat, its in cat_lists.items():
-        if not its: continue
-        screen.blit(font.render(f"[{cat}]", True, COLORS["npc"]), (sheet_rect.x + x_off, sheet_rect.y + 120)); y_off = 150
-        for it in its:
-            text_surf = font.render(f"- {it}", True, COLORS["text"]); rect = screen.blit(text_surf, (sheet_rect.x + x_off, sheet_rect.y + y_off))
-            clickable_zones.append({"rect": rect, "action": "inventory_item", "item": it}); y_off += 25
-        x_off += 250
+def draw_header(screen, state, rect, font, title_font, COLORS):
+    pygame.draw.rect(screen, (20, 20, 25), rect)
+    pygame.draw.line(screen, COLORS["menu_border"], (rect.x, rect.bottom), (rect.right, rect.bottom), 1)
+    meta = state["local_map_state"].get("meta", {})
+    region = meta.get("region_id", "The Unknown")
+    clock = meta.get("clock", 0)
+    screen.blit(font.render(f"REGION: {region.replace('_', ' ').upper()}", True, COLORS["title"]), (rect.x + 20, rect.y + 15))
+    screen.blit(font.render(f"CYCLES: {clock}", True, (150, 150, 150)), (rect.x + 300, rect.y + 15))
+    tracker = meta.get("campaign_tracker", {})
+    quest = tracker.get("active_subplot", tracker.get("main_plot", "Seeking the Iron Caldera..."))
+    q_label = font.render("OBJECTIVE: ", True, COLORS["npc"])
+    screen.blit(q_label, (rect.x + 500, rect.y + 15))
+    screen.blit(font.render(str(quest), True, COLORS["text"]), (rect.x + 500 + q_label.get_width(), rect.y + 15))
 
 def draw_hover_tooltip(screen, entity, mouse_pos, font, COLORS):
     if not entity: return
-    lines = [entity.get("name", "Unknown Entity")]
-    if "hp" in entity: lines.append(f"HP: {entity['hp']}/{entity.get('max_hp', entity['hp'])}")
+    lines = [entity.get("name", "Unknown Entity").upper()]
+    if "hp" in entity: lines.append(f"VITALITY: {entity['hp']}/{entity.get('max_hp', entity['hp'])}")
+    if "composure" in entity:
+        comp_max = entities.get_max_composure(entity)
+        lines.append(f"COMPOSURE: {entity['composure']}/{comp_max}")
     tags = entity.get("tags", [])
-    if tags: lines.append(f"[{', '.join(tags[:3])}]")
-    pd = 10; lh = 20; bw = max([font.size(l)[0] for l in lines]) + (pd * 2); bh = (len(lines) * lh) + pd
-    x, y = mouse_pos[0] + 15, mouse_pos[1] + 15; sw, sh = screen.get_size()
+    if tags: lines.append(f"TAGS: {', '.join(tags[:3]).upper()}")
+    pd = 12; lh = 22; bw = max([font.size(l)[0] for l in lines]) + (pd * 2); bh = (len(lines) * lh) + pd
+    x, y = mouse_pos[0] + 20, mouse_pos[1] + 20
+    sw, sh = screen.get_size()
     if x + bw > sw: x = mouse_pos[0] - bw - 10
     if y + bh > sh: y = mouse_pos[1] - bh - 10
-    ts = pygame.Surface((bw, bh)); ts.set_alpha(230); ts.fill(COLORS["menu_bg"]); screen.blit(ts, (x, y))
+    ts = pygame.Surface((bw, bh)); ts.set_alpha(235); ts.fill((15, 15, 25)); screen.blit(ts, (x, y))
     pygame.draw.rect(screen, COLORS["menu_border"], (x, y, bw, bh), 1)
     for i, l in enumerate(lines):
         c = COLORS["title"] if i == 0 else COLORS["text"]
-        if "hp" in entity and i == 1: c = COLORS["hostile"] if "hostile" in tags else COLORS["player"]
-        screen.blit(font.render(l, True, c), (x + pd, y + 5 + (i * lh)))
+        if i == 1: c = COLORS["hostile"] if "hostile" in tags else COLORS["player"]
+        if i == 2 and "composure" in entity: c = (200, 150, 255)
+        screen.blit(font.render(l, True, c), (x + pd, y + 8 + (i * lh)))

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ostraka: Clockwork Chaos Visualizer</title>
+    <style>
+        body { background: #0a0a0c; color: #d0d0d5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { background: #151518; padding: 20px; border-radius: 12px; border: 1px solid #2a2a30; }
+        canvas { border: 1px solid #3a3a40; background: #050507; }
+        .controls { margin-top: 20px; }
+        h1 { color: #ff3e3e; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <h1>Clockwork Chaos Visualizer</h1>
+    <div class="container">
+        <canvas id="chaosCanvas" width="500" height="500"></canvas>
+        <div class="controls">
+            <label>Leyline Bleed (Degrees): </label>
+            <input type="range" id="bleedSlider" min="2" max="25" value="10" step="1">
+            <span id="bleedVal">10°</span>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('chaosCanvas');
+        const ctx = canvas.getContext('2d');
+        const bleedSlider = document.getElementById('bleedSlider');
+        const bleedVal = document.getElementById('bleedVal');
+        const CENTER = 4.5;
+        function draw() {
+            const bleed = parseInt(bleedSlider.value);
+            bleedVal.innerText = bleed + '°';
+            ctx.clearRect(0, 0, 500, 500);
+            for(let y=0; y<10; y++) {
+                for(let x=0; x<10; x++) {
+                    const dx = x - CENTER; const dy = y - CENTER;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const angleDeg = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+                    const nearestSpoke = Math.round(angleDeg / 30.0) * 30.0;
+                    let angleDiff = Math.abs(angleDeg - nearestSpoke);
+                    if(angleDiff > 180) angleDiff = 360 - angleDiff;
+                    let intensity = 0;
+                    if(dist < 1.0) intensity = 0.9;
+                    else if(angleDiff <= bleed) intensity = ((bleed - angleDiff) / bleed) * (dist > 3 ? 0.6 : 0.3);
+                    if(intensity > 0) {
+                        ctx.fillStyle = `rgba(255, 62, 62, ${intensity})`;
+                        ctx.fillRect(x*50, y*50, 50, 50);
+                    }
+                }
+            }
+        }
+        bleedSlider.oninput = draw; draw();
+    </script>
+</body>
+</html>

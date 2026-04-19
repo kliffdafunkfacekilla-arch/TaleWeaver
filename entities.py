@@ -178,6 +178,10 @@ def get_max_focus(entity):
     tax = acc.get("focus_tax", 0) if acc else 0
     return max(1, base_max - tax)
 
+def get_max_composure(entity):
+    """Derived Composure: Base 10 + Willpower + Intuition."""
+    return 10 + get_stat(entity, "Willpower") + get_stat(entity, "Intuition")
+
 def spend_stamina(entity, amount):
     res = entity.get("resources", {})
     if res.get("stamina", 0) >= amount:
@@ -194,6 +198,8 @@ def refresh_beats(entity):
     fo = 1 
     
     entity["resources"]["beats"] = {"move": mv, "stamina": st, "focus": fo}
+    # MOVEMENT RESERVOIR: Allow movement up to speed per move beat
+    entity["resources"]["move_remaining"] = get_movement_speed(entity) if mv > 0 else 0
 
 def grant_free_beat(entity, beat_type):
     current_beats = entity.setdefault("resources", {}).setdefault("beats", {"move": 0, "stamina": 0, "focus": 0})
@@ -212,6 +218,10 @@ def consume_beat(entity, beat_type):
     return False
 
 def apply_damage(entity, amount, damage_type="physical"):
+    """
+    Physical damage reduces HP. Mental damage reduces Composure.
+    Returning (is_dead, trauma_msg).
+    """
     if damage_type == "physical" and "hp" in entity:
         entity["hp"] -= amount
         max_hp = entity.get("max_hp", 20)
@@ -222,13 +232,13 @@ def apply_damage(entity, amount, damage_type="physical"):
             if "maimed" not in tags: 
                 tags.append("maimed")
                 if "staggered" not in tags: tags.append("staggered")
-                trauma_msg = f"🩸 [TRAUMA] {entity['name']} suffers a massive blow and is MAIMED!"
+                trauma_msg = f"\ud83e\ude78 [TRAUMA] {entity['name']} suffers a massive blow and is MAIMED!"
                 
         if entity["hp"] > 0 and entity["hp"] <= (max_hp * 0.25):
             if "bleeding" not in tags:
                 tags.append("bleeding")
                 if not trauma_msg:
-                    trauma_msg = f"🩸 [TRAUMA] {entity['name']} is heavily wounded and BLEEDING!"
+                    trauma_msg = f"\ud83e\ude78 [TRAUMA] {entity['name']} is heavily wounded and BLEEDING!"
                 else:
                     trauma_msg += " and BLEEDING!"
 
@@ -236,10 +246,29 @@ def apply_damage(entity, amount, damage_type="physical"):
             entity["hp"] = 0
             if "hostile" in entity.get("tags", []): entity["tags"].remove("hostile")
             if "dead" not in entity.get("tags", []): entity["tags"].append("dead")
-            return True, f"💀 {entity['name']} has fallen." # Target died
+            return True, f"\ud83d\udc80 {entity['name']} has fallen." 
             
-        return False, trauma_msg # Target survived
+        return False, trauma_msg
             
+    elif damage_type == "mental" and "composure" in entity:
+        entity["composure"] -= amount
+        max_comp = get_max_composure(entity)
+        tags = entity.setdefault("tags", [])
+        trauma_msg = ""
+        
+        if amount >= (max_comp * 0.4):
+            if "shaken" not in tags:
+                tags.append("shaken")
+                trauma_msg = f"\ud83e\udde0 [MENTAL TRAUMA] {entity['name']}'s resolve is SHAKEN!"
+        
+        if entity["composure"] <= 0:
+            entity["composure"] = 0
+            if "broken" not in tags: tags.append("broken")
+            # In Social Combat, 'broken' usually ends the fight with compliance
+            return True, f"\ud83c\udff3\ufe0f {entity['name']}'s will scales. They are BROKEN."
+
+        return False, trauma_msg
+
     return False, ""
 
 def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
@@ -267,13 +296,23 @@ def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
         base_roll = roll_1
         roll_log = f"[Rolled {base_roll}]"
 
-    total = base_roll + get_stat(entity, stat_name)
+    # Support for multi-stat skills (e.g. "Charm+Logic")
+    if "+" in stat_name:
+        stats = stat_name.split("+")
+        bonus = sum(get_stat(entity, s.strip()) for s in stats)
+    else:
+        bonus = get_stat(entity, stat_name)
+
+    total = base_roll + bonus
     return total, roll_log
 
 def regenerate_resources(entity):
     res = entity.setdefault("resources", {})
-    max_s = res.get("max_stamina", 10)
-    max_f = res.get("max_focus", 10)
+    max_s = get_max_stamina(entity)
+    max_f = get_max_focus(entity)
     
     res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
     res["focus"] = min(max_f, res.get("focus", 0) + 2)
+    
+    if "composure" in entity:
+        entity["composure"] = min(get_max_composure(entity), entity["composure"] + 1)

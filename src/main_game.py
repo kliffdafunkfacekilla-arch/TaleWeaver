@@ -3,6 +3,7 @@ import sys
 import json
 import asyncio
 import os
+from typing import List, Dict, Any, Tuple, Optional
 
 # Internal imports
 import engine
@@ -12,7 +13,13 @@ import ui_manager
 import actions
 
 class OstrakaGame:
+    """
+    The main application class for Ostraka: Aether & Iron.
+    Handles the Pygame initialization, the main asynchronous event loop, 
+    and the synchronization between tactical physics and AI narration.
+    """
     def __init__(self):
+        """Initializes Pygame, sets window dimensions, and loads the design system."""
         pygame.init()
         self.CELL_SIZE = 40  
         self.GRID_WIDTH = 20  
@@ -25,6 +32,7 @@ class OstrakaGame:
         self.screen = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
         pygame.display.set_caption("Ostraka: Aether & Iron (Async Engine)")
 
+        # Harmonious color palette for a gritty steampunk aesthetic
         self.COLORS = {
             "bg": (20, 25, 25), "grid": (40, 45, 45),
             "player": (50, 150, 255), "hostile": (220, 50, 50), "npc": (200, 180, 50),
@@ -41,19 +49,24 @@ class OstrakaGame:
         self.icon_font = pygame.font.SysFont("consolas", 20, bold=True)
         self.title_font = pygame.font.SysFont("consolas", 36, bold=True)
 
-        # Global State
-        self.app_state = "MAIN_MENU"
+        # Global Game State
+        self.app_state = "MAIN_MENU"  # Valid: MAIN_MENU, PLAYING, CHARACTER_SHEET, TRANSITION_PROMPT, GAME_OVER
         self.status_text = "System Online. Async Loop Running."
-        self.transition_target = None
-        self.map_data = {"entities": [], "meta": {}}
+        self.transition_target: Optional[List[int]] = None
+        self.map_data: Dict[str, Any] = {"entities": [], "meta": {}}
         self.context_menu = {
             "active": False, "x": 0, "y": 0, 
             "target_name": None, "target_id": None, "target_pos": None, 
             "options": [], "page": "main"
         }
 
-    def load_map_data(self):
-        """Reads the state via engine (which uses StateManager/Pydantic now)."""
+    def load_map_data(self) -> Dict[str, Any]:
+        """
+        Retrieves serialized map data from the engine and formats it for the UI.
+        
+        Returns:
+            Dict[str, Any]: Formatted map data including entities and campaign info.
+        """
         state = engine.load_state()
         if "local_map_state" in state:
             md = state["local_map_state"]
@@ -62,7 +75,8 @@ class OstrakaGame:
             return md
         return {"entities": [], "meta": {}}
 
-    def get_camera_offset(self, map_data):
+    def get_camera_offset(self, map_data: Dict[str, Any]) -> Tuple[int, int]:
+        """Calculates camera position to keep the player centered in the grid."""
         player_pos = [0, 0] 
         map_w, map_h = map_data.get("meta", {}).get("grid_size", [50, 50])
         for e in map_data.get("entities", []):
@@ -74,13 +88,15 @@ class OstrakaGame:
         return cam_x, cam_y
 
     def draw_grid(self):
+        """Renders the tactical grid lines."""
         map_width = self.WINDOW_WIDTH - self.LOG_WIDTH
         for x in range(0, map_width + 1, self.CELL_SIZE): 
             pygame.draw.line(self.screen, self.COLORS["grid"], (x, 0), (x, self.WINDOW_HEIGHT - self.UI_HEIGHT))
         for y in range(0, self.WINDOW_HEIGHT - self.UI_HEIGHT + 1, self.CELL_SIZE): 
             pygame.draw.line(self.screen, self.COLORS["grid"], (0, y), (map_width, y))
 
-    def draw_entities(self, map_data, cam_x, cam_y):
+    def draw_entities(self, map_data: Dict[str, Any], cam_x: int, cam_y: int):
+        """Renders all entities within the camera's view of the tactical grid."""
         for entity in map_data.get("entities", []):
             grid_x = entity.pos[0] - cam_x
             grid_y = entity.pos[1] - cam_y
@@ -90,6 +106,7 @@ class OstrakaGame:
                 ent_type = entity.type
                 color = self.COLORS.get(ent_type, (150, 150, 150))
                 
+                # Material-based coloring
                 if "water" in tags: color = self.COLORS["water"]
                 elif "plant" in tags: color = self.COLORS["plant"]
                 elif "wood" in tags: color = self.COLORS["wood"]
@@ -109,6 +126,7 @@ class OstrakaGame:
                     self.screen.blit(text_surf, text_surf.get_rect(center=(pixel_x + self.CELL_SIZE // 2, pixel_y + self.CELL_SIZE // 2)))
 
     def draw_context_menu(self):
+        """Renders the right-click semantic menu."""
         if not self.context_menu["active"]: return
         mx, my = pygame.mouse.get_pos(); mw, oh, hh = 180, 30, 30; opts = self.context_menu["options"]
         mr = pygame.Rect(self.context_menu["x"], self.context_menu["y"], mw, (len(opts) * oh) + hh)
@@ -121,7 +139,8 @@ class OstrakaGame:
             if opt_rect.collidepoint(mx, my): pygame.draw.rect(self.screen, self.COLORS["menu_hover"], opt_rect)
             self.screen.blit(self.font.render(opt, True, self.COLORS["text"]), (opt_rect.x + 10, opt_rect.y + 5))
 
-    def generate_menu_options(self, target, player, map_data, page="main"):
+    def generate_menu_options(self, target: Optional[entities.Entity], player: entities.Entity, map_data: Dict[str, Any], page="main") -> List[str]:
+        """Calculates valid contextual actions based on player skills, target tags, and game state."""
         if not player: return ["Cancel"]
         learned_skills = player.skills
         valid_actions = actions.get_valid_actions(player, target, learned_skills=learned_skills)
@@ -142,6 +161,8 @@ class OstrakaGame:
                 if "building" in target.tags: options.append("[Enter]")
             for skill in learned_skills:
                 if skill in valid_actions: options.append(skill)
+            
+            # Stat-based 'BRUTE FORCE' fallback actions
             stat_actions = []
             for act in valid_actions:
                 if act in learned_skills: continue
@@ -149,6 +170,7 @@ class OstrakaGame:
                 if best_stat: stat_actions.append((act, best_stat, entities.get_stat(player, best_stat)))
             stat_actions.sort(key=lambda x: x[2], reverse=True)
             for i in range(min(2, len(stat_actions))): options.append(f"[{stat_actions[i][1]}] {stat_actions[i][0]}")
+            
             options.append("Examine")
             if len(valid_actions) > 3: options.append("More Actions...")
         elif page == "more":
@@ -158,11 +180,13 @@ class OstrakaGame:
         options.append("Cancel"); seen = set(); return [x for x in options if not (x in seen or seen.add(x))]
 
     async def trigger_narration(self):
+        """Asynchronously triggers the LLM Narrator to provide gritty flavor text for the last action."""
         self.status_text = "Director: [Thinking...]"
         new_text = await narrator.generate_flavor_text()
         self.status_text = f"Director: {new_text}"
 
     async def start_game(self):
+        """The primary asynchronous loop of the Ostraka Engine."""
         clock = pygame.time.Clock()
         self.map_data = self.load_map_data()
         log_rect = pygame.Rect(self.WINDOW_WIDTH - self.LOG_WIDTH, 0, self.LOG_WIDTH, self.WINDOW_HEIGHT - self.UI_HEIGHT)
@@ -209,7 +233,7 @@ class OstrakaGame:
                 msg = self.title_font.render("\u2620\ufe0f GAME OVER \u2620\ufe0f", True, self.COLORS["hostile"])
                 self.screen.blit(msg, msg.get_rect(center=(self.WINDOW_WIDTH//2, self.WINDOW_HEIGHT//2 - 40)))
 
-            # --- EVENT LOGIC ---
+            # --- EVENT HANDLING ---
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                 
@@ -291,9 +315,10 @@ class OstrakaGame:
                         elif bn.collidepoint(event.pos): self.app_state = "PLAYING"
 
             pygame.display.flip()
-            await asyncio.sleep(0.016) # ~60 FPS
+            await asyncio.sleep(0.016) # Goal: ~60 FPS
 
-    def draw_tactical_screen_base(self, map_data, cam_x, cam_y):
+    def draw_tactical_screen_base(self, map_data: Dict[str, Any], cam_x: int, cam_y: int):
+        """Draws the consistent tactical UI components (Grid, Entities, Objective, Status Bar)."""
         self.screen.fill(self.COLORS["bg"]); self.draw_grid(); self.draw_entities(map_data, cam_x, cam_y); self.draw_context_menu()
         campaign = map_data.get("meta", {}).get("campaign_tracker", {})
         if campaign.get("active_subplot"):
@@ -308,15 +333,20 @@ class OstrakaGame:
             self.screen.blit(self.font.render(f"STAMINA: {player.resources.stamina}", True, self.COLORS["stamina"]), (vitals_x + 180, self.WINDOW_HEIGHT - self.UI_HEIGHT + 15))
             self.screen.blit(self.font.render(f"FOCUS: {player.resources.focus}", True, self.COLORS["focus"]), (vitals_x + 300, self.WINDOW_HEIGHT - self.UI_HEIGHT + 15))
 
-    def draw_transition_prompt_ui(self):
+    def draw_transition_prompt_ui(self) -> Tuple[pygame.Rect, pygame.Rect]:
+        """Draws the traveling prompt when a player hits the map boundary."""
         pr = pygame.Rect((self.WINDOW_WIDTH - 300)//2, (self.WINDOW_HEIGHT - 150)//2, 300, 150)
         pygame.draw.rect(self.screen, self.COLORS["menu_bg"], pr); pygame.draw.rect(self.screen, self.COLORS["menu_border"], pr, 2)
         text_surf = self.font.render("Travel to a new region?", True, self.COLORS["text"])
         self.screen.blit(text_surf, text_surf.get_rect(center=(self.WINDOW_WIDTH//2, self.WINDOW_HEIGHT//2 - 30)))
         by, bn = pygame.Rect(self.WINDOW_WIDTH//2 - 90, self.WINDOW_HEIGHT//2 + 10, 80, 40), pygame.Rect(self.WINDOW_WIDTH//2 + 10, self.WINDOW_HEIGHT//2 + 10, 80, 40)
+        pygame.draw.rect(self.screen, (100, 100, 100), by); pygame.draw.rect(self.screen, (100, 100, 100), bn)
+        self.screen.blit(self.font.render("YES", True, (255,255,255)), by.inflate(-20, -10).topleft)
+        self.screen.blit(self.font.render("NO", True, (255,255,255)), bn.inflate(-20, -10).topleft)
         return by, bn
 
-    def attempt_player_move(self, p_id, gx, gy):
+    def attempt_player_move(self, p_id: str, gx: int, gy: int):
+        """Standardizes move execution with boundary detection for map transitions."""
         gw, gh = self.map_data.get("meta", {}).get("grid_size", [50, 50])
         if gx <= 0 or gx >= gw - 1 or gy <= 0 or gy >= gh - 1:
             self.app_state = "TRANSITION_PROMPT"; self.transition_target = [gx, gy]
@@ -324,7 +354,8 @@ class OstrakaGame:
             res = engine.execute_move(p_id, gx, gy)
             self.status_text = f"System: {res}"; self.map_data = self.load_map_data()
 
-    async def handle_menu_selection(self, sel, p_id, t_id, t_pos):
+    async def handle_menu_selection(self, sel: str, p_id: str, t_id: str, t_pos: List[int]):
+        """Logic branch for executing actions selected from the Semantic Menu."""
         if sel == "Cancel": return
         self.status_text = f"System: {sel}..."; res = ""
         if sel == "More Actions...": self.context_menu["page"] = "more"; return 
@@ -337,10 +368,13 @@ class OstrakaGame:
         elif sel.startswith("["): res = engine.execute_stat_action(p_id, t_id, sel)
         
         self.status_text = f"System: {res}"; self.map_data = self.load_map_data()
+        
+        # Trigger Narrative Weaver if a significant mechanical action occurred
         if "No" not in res and "Exhausted" not in res:
             await self.trigger_narration()
 
 def main():
+    """Application entry point."""
     game = OstrakaGame()
     asyncio.run(game.start_game())
 

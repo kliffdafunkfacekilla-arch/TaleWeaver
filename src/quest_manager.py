@@ -2,14 +2,23 @@ import json
 import random
 import aiohttp
 import asyncio
+from typing import Dict, Any, List, Optional
 
 # CONFIGURATION
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.1:8b-instruct-q3_K_L"
 
-async def generate_story_glue(seed_event, state):
+async def generate_story_glue(seed_event: str, state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Narrative Weaver AI: Bridges a random map event into the campaign context (Async).
+    Narrative Weaver AI: Bridges a random map event into the campaign context.
+    Uses an asynchronous POST request to the local Ollama server.
+    
+    Args:
+        seed_event (str): The short description of the map event (e.g., 'A trail of blood').
+        state (Dict[str, Any]): The full game state for context extraction.
+        
+    Returns:
+        Dict[str, Any]: A JSON object with 'story_hook', 'involved_factions', and 'dominant_theme'.
     """
     tracker = state.get("meta", {}).get("campaign_tracker", {})
     past_history = tracker.get("quest_history", [])
@@ -48,16 +57,23 @@ async def generate_story_glue(seed_event, state):
     except Exception as e:
         print(f"[Weaver Error] AI failed: {e}")
 
-    # FALLBACK DATA
+    # FALLBACK DATA in case of AI failure or timeout
     return {
         "story_hook": f"The signs are clear: {seed_event}. It feels like an echo of your past.",
         "involved_factions": ["wild_beasts"],
         "dominant_theme": "combat"
     }
 
-def build_mechanical_deck(weaver_data, region_threat_level=1):
+def build_mechanical_deck(weaver_data: Dict[str, Any], region_threat_level: int = 1) -> List[Dict[str, Any]]:
     """
     Mechanical Deck Builder: Translates AI narrative themes into a sequence of challenges.
+    
+    Args:
+        weaver_data (Dict[str, Any]): The story data from generate_story_glue.
+        region_threat_level (int): Difficulty modifier for the region.
+        
+    Returns:
+        List[Dict[str, Any]]: A list of 'cards' representing tactical encounters.
     """
     deck_size = random.randint(3, 5)
     theme = weaver_data.get("dominant_theme", "combat")
@@ -88,14 +104,21 @@ def build_mechanical_deck(weaver_data, region_threat_level=1):
         }
         deck.append(card)
         
+    # Ensure a climactic finish
     deck[-1]["type"] = "climax"
     deck[-1]["threat"] += 1 
     
     return deck
 
-def build_macro_deck(weaver_data):
+def build_macro_deck(weaver_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Macro Deck Builder: Generates a sequence of Overworld Macro Steps.
+    
+    Args:
+        weaver_data (Dict[str, Any]): The story data from generate_story_glue.
+        
+    Returns:
+        List[Dict[str, Any]]: High-level objectives for the player's quest journal.
     """
     theme = weaver_data.get("dominant_theme", "combat")
     factions = weaver_data.get("involved_factions", ["wild_beasts"])
@@ -126,8 +149,17 @@ def build_macro_deck(weaver_data):
         
     return deck
 
-def build_interior_deck(building_type, is_quest=False, quest_data=None):
-    """Builds a sequence of rooms for an interior location."""
+def build_interior_deck(building_type: str, is_quest: bool = False, quest_data: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """
+    Builds a sequence of rooms for an interior location (Dungeon).
+    
+    Args:
+        building_type (str): The theme of the building (e.g., 'bandit_camp').
+        is_quest (bool): If True, complexity increases to match a quest arc.
+        
+    Returns:
+        List[Dict[str, Any]]: A sequence of room definitions.
+    """
     if not is_quest:
         return [{"room_type": f"{building_type}_main", "event": "social", "threat": 0}]
     

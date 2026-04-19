@@ -5,41 +5,76 @@ import json
 import os
 import actions
 
-ITEM_CACHE = None
-SKILL_CACHE = None
+# Global caches for JSON databases to avoid repeated disk I/O
+ITEM_CACHE: Optional[Dict[str, Any]] = None
+SKILL_CACHE: Optional[Dict[str, Any]] = None
+
+class Beats(BaseModel):
+    """Action tokens refreshed every turn."""
+    move: int = 0
+    stamina: int = 0
+    focus: int = 0
 
 class ResourcePool(BaseModel):
-    stamina: int = 10
+    """Transient pools for health, energy, and action beats."""
+    stamina: int = 0
     max_stamina: int = 10
-    focus: int = 10
+    focus: int = 0
     max_focus: int = 10
-    move_remaining: int = 0
-    beats: Dict[str, int] = Field(default_factory=lambda: {"move": 1, "stamina": 1, "focus": 1})
-    composure: int = 20
-    max_composure: int = 20
+    beats: Beats = Field(default_factory=Beats)
+
+class Equipment(BaseModel):
+    """Categorized items currently wielded or worn."""
+    weapon: Optional[str] = "None"
+    armor: Optional[str] = "None"
+    accessory: Optional[str] = "None"
+
+class EntityStats(BaseModel):
+    """Primary quantitative attributes of an entity."""
+    Awareness: int = 0
+    Logic: int = 0
+    Vitality: int = 0
+    Knowledge: int = 0
+    Charm: int = 0
+    Finesse: int = 0
+    Reflexes: int = 0
+    Might: int = 0
+    Intuition: int = 0
+    Endurance: int = 0
+    Fortitude: int = 0
+    Willpower: int = 0
+
+class Tracks(BaseModel):
+    """Primary stat tracks for combat resolution."""
+    offense: str = "Might"
+    defense: str = "Reflexes"
 
 class Entity(BaseModel):
+    """
+    The core data model for all actors and props in Ostraka.
+    Strictly enforced via Pydantic for type safety and nested validation.
+    """
     id: str = Field(default_factory=lambda: str(random.randint(1000, 9999)))
     name: str
-    type: str  # player, npc, prop, hostile
+    type: str = "prop"  # player, npc, hostile, prop
     pos: List[int] = Field(default_factory=lambda: [0, 0])
     hp: int = 20
     max_hp: int = 20
-    stats: Dict[str, int] = Field(default_factory=dict)
     resources: ResourcePool = Field(default_factory=ResourcePool)
     inventory: List[str] = Field(default_factory=list)
+    equipment: Equipment = Field(default_factory=Equipment)
+    stats: EntityStats = Field(default_factory=EntityStats)
+    tracks: Tracks = Field(default_factory=Tracks)
     skills: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
-    equipment: Dict[str, str] = Field(default_factory=lambda: {"weapon": "None", "armor": "None", "accessory": "None"})
-    tracks: Dict[str, str] = Field(default_factory=lambda: {"offense": "Might", "defense": "Reflexes"})
 
-def load_items():
+def load_items() -> Dict[str, Any]:
+    """Reads the items database and caches it for performance."""
     global ITEM_CACHE
     if ITEM_CACHE is not None:
         return ITEM_CACHE
         
     try:
-        # Check if we are running from root or src
         path = "data/items.json" if os.path.exists("data/items.json") else "../data/items.json"
         with open(path, "r", encoding="utf-8") as f: 
             ITEM_CACHE = json.load(f)
@@ -47,16 +82,14 @@ def load_items():
     except Exception: 
         return {"weapons":{}, "armor":{}, "accessories":{}, "consumables":{}}
 
-def load_skills():
+def load_skills() -> Dict[str, Any]:
     """Reads the skills database and caches it for performance."""
     global SKILL_CACHE
     if SKILL_CACHE is not None:
         return SKILL_CACHE
         
     try:
-        # Check if we are running from root or src
         path = "data/skills.json" if os.path.exists("data/skills.json") else "../data/skills.json"
-        
         if not os.path.exists(path):
             return {"passives": {}, "tactics": {}, "anomalies": {}}
             
@@ -68,6 +101,7 @@ def load_skills():
         return {"passives": {}, "tactics": {}, "anomalies": {}}
 
 def get_item_weight(item_name: str) -> int:
+    """Retrieves weight of an item from the JSON database."""
     items = load_items()
     for cat in ["weapons", "armor", "accessories", "consumables"]:
         if item_name in items.get(cat, {}):
@@ -75,12 +109,14 @@ def get_item_weight(item_name: str) -> int:
     return 0
 
 def loot_all(looter: Entity, target: Entity) -> bool:
+    """Moves all inventory from target to looter."""
     if not target.inventory: return False
     looter.inventory.extend(target.inventory)
     target.inventory = []
     return True
 
 def equip_item(entity: Entity, item_name: str) -> bool:
+    """Equips an item, returning old gear to inventory."""
     items = load_items()
     item_type = None
     if item_name in items.get("weapons", {}): item_type = "weapon"
@@ -89,30 +125,32 @@ def equip_item(entity: Entity, item_name: str) -> bool:
     
     if not item_type or item_name not in entity.inventory: return False
 
-    current = entity.equipment.get(item_type)
+    current = getattr(entity.equipment, item_type)
     if current and current != "None":
         entity.inventory.append(current)
         
-    entity.equipment[item_type] = item_name
+    setattr(entity.equipment, item_type, item_name)
     entity.inventory.remove(item_name)
     return True
 
 def unequip_item(entity: Entity, slot: str) -> bool:
-    current = entity.equipment.get(slot)
+    """Unequips an item from the specific Equipment slot."""
+    current = getattr(entity.equipment, slot, "None")
     if current and current != "None":
         entity.inventory.append(current)
-        entity.equipment[slot] = "None"
+        setattr(entity.equipment, slot, "None")
         return True
     return False
 
 def get_gear_bonus(entity: Entity, stat_name: str) -> int:
-    """Dynamically looks for {stat_name}_bonus in equipped items."""
+    """Calculates stat bonuses from equipped gear."""
     items = load_items()
     bonus = 0
-    equip = entity.equipment
     bonus_key = f"{stat_name.lower()}_bonus"
     
-    for slot, item_name in equip.items():
+    # Iterate over Equipment model fields
+    for slot in ["weapon", "armor", "accessory"]:
+        item_name = getattr(entity.equipment, slot)
         if not item_name or item_name == "None": continue
         
         item_data = None
@@ -127,23 +165,23 @@ def get_gear_bonus(entity: Entity, stat_name: str) -> int:
     return bonus
 
 def get_stat(entity: Entity, stat_name: str) -> int:
-    """Returns the total value of a stat including gear bonuses."""
-    base = entity.stats.get(stat_name, 0)
+    """Retrieves total stat value (Base Attribute + Gear Bonus)."""
+    base = getattr(entity.stats, stat_name, 0)
     base += get_gear_bonus(entity, stat_name)
     return base
 
 def get_attack_stat(entity: Entity) -> str:
-    """B.R.U.T.A.L. Engine: Returns the stat used for the Offense Track."""
-    return entity.tracks.get("offense", "Might")
+    """Primary offensive track."""
+    return entity.tracks.offense
 
 def get_defense_stat(entity: Entity) -> str:
-    """B.R.U.T.A.L. Engine: Returns the stat used for the Defense Track."""
-    return entity.tracks.get("defense", "Reflexes")
+    """Primary defensive track."""
+    return entity.tracks.defense
 
 def get_weapon_stats(entity: Entity) -> Dict[str, Any]:
-    """Retrieves damage and range based on equipped weapon."""
+    """Retrieves profile for whatever is in entity.equipment.weapon."""
     items = load_items()
-    equipped_weapon = entity.equipment.get("weapon")
+    equipped_weapon = entity.equipment.weapon
     
     if equipped_weapon and equipped_weapon in items.get("weapons", {}):
         w = items["weapons"][equipped_weapon]
@@ -167,6 +205,7 @@ def get_weapon_stats(entity: Entity) -> Dict[str, Any]:
     }
 
 def get_derived_stats(entity: Entity) -> Dict[str, int]:
+    """Groups base attributes into macro-categories (Perception, Stealth, etc)."""
     return {
         "Perception": get_stat(entity, "Awareness") + get_stat(entity, "Logic") + get_stat(entity, "Vitality"),
         "Stealth": get_stat(entity, "Knowledge") + get_stat(entity, "Charm") + get_stat(entity, "Finesse"),
@@ -175,10 +214,12 @@ def get_derived_stats(entity: Entity) -> Dict[str, int]:
     }
 
 def get_movement_speed(entity: Entity) -> int:
+    """Returns final grid movement capability."""
     stats = get_derived_stats(entity)
     return max(1, stats.get("Movement", 1))
 
 def get_best_stat_for_action(player: Entity, action_name: str) -> Optional[str]:
+    """Determines which of a list of valid stats for an action is highest."""
     data = actions.ACTION_REGISTRY.get(action_name)
     if not data or not data.get("stats"): return None
     
@@ -194,47 +235,53 @@ def get_best_stat_for_action(player: Entity, action_name: str) -> Optional[str]:
     return best_stat
 
 def get_max_stamina(entity: Entity) -> int:
+    """Calculates max stamina minus Armor Tax."""
     base_max = entity.resources.max_stamina
     items = load_items()
-    equip = entity.equipment
-    armor = items.get("armor", {}).get(equip.get("armor"))
+    armor = items.get("armor", {}).get(entity.equipment.armor)
     tax = armor.get("stamina_tax", 0) if armor else 0
     return max(1, base_max - tax)
 
 def get_max_focus(entity: Entity) -> int:
+    """Calculates max focus minus Accessory Tax."""
     base_max = entity.resources.max_focus
     items = load_items()
-    equip = entity.equipment
-    acc = items.get("accessories", {}).get(equip.get("accessory"))
+    acc = items.get("accessories", {}).get(entity.equipment.accessory)
     tax = acc.get("focus_tax", 0) if acc else 0
     return max(1, base_max - tax)
 
 def spend_stamina(entity: Entity, amount: int) -> bool:
+    """Decrements stamina pool."""
     if entity.resources.stamina >= amount:
         entity.resources.stamina -= amount
         return True
     return False
 
 def refresh_beats(entity: Entity):
+    """Resets resource beats, applying status penalties."""
     tags = entity.tags
-    mv = 0 if "staggered" in tags else 1
-    st = 0 if "stunned" in tags else 1
-    fo = 1 
-    entity.resources.beats = {"move": mv, "stamina": st, "focus": fo}
+    entity.resources.beats.move = 0 if "staggered" in tags else 1
+    entity.resources.beats.stamina = 0 if "stunned" in tags else 1
+    entity.resources.beats.focus = 1
 
 def grant_free_beat(entity: Entity, beat_type: str) -> bool:
-    if entity.resources.beats.get(beat_type, 0) < 2:
-        entity.resources.beats[beat_type] += 1
+    """Adds a bonus beat of a specific type (e.g. 'move'). cap of 2."""
+    current = getattr(entity.resources.beats, beat_type, 2)
+    if current < 2:
+        setattr(entity.resources.beats, beat_type, current + 1)
         return True
     return False
 
 def consume_beat(entity: Entity, beat_type: str) -> bool:
-    if entity.resources.beats.get(beat_type, 0) > 0:
-        entity.resources.beats[beat_type] -= 1
+    """Attempts to use an action beat."""
+    val = getattr(entity.resources.beats, beat_type, 0)
+    if val > 0:
+        setattr(entity.resources.beats, beat_type, val - 1)
         return True
     return False
 
-def apply_damage(entity: Entity, amount: int, damage_type="physical"):
+def apply_damage(entity: Entity, amount: int, damage_type="physical") -> tuple[bool, str]:
+    """Mechanical resolution of health reduction."""
     if damage_type == "physical":
         entity.hp = max(0, entity.hp - amount)
         
@@ -262,7 +309,8 @@ def apply_damage(entity: Entity, amount: int, damage_type="physical"):
             
     return False, ""
 
-def roll_check(entity: Entity, stat_name: str, situational_adv=False, situational_dis=False):
+def roll_check(entity: Entity, stat_name: str, situational_adv=False, situational_dis=False) -> tuple[int, str]:
+    """Performance check via the B.R.U.T.A.L Engine logic."""
     tags = entity.tags
     has_adv = situational_adv
     has_dis = situational_dis
@@ -292,6 +340,7 @@ def roll_check(entity: Entity, stat_name: str, situational_adv=False, situationa
     return total, roll_log
 
 def regenerate_resources(entity: Entity):
+    """Replenishes energy pools."""
     res = entity.resources
     res.stamina = min(get_max_stamina(entity), res.stamina + 2)
     res.focus = min(get_max_focus(entity), res.focus + 2)

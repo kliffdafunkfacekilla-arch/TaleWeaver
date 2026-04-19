@@ -2,21 +2,30 @@ import sqlite3
 import json
 import os
 from pydantic import BaseModel
+from typing import Dict, Any, Optional
 
 DB_NAME = "state/shatterlands.db"
 
 class PydanticEncoder(json.JSONEncoder):
-    """Custom JSON encoder to handle Pydantic models during DB storage."""
+    """
+    Custom JSON encoder to handle Pydantic models during database storage.
+    Automatically converts BaseModel instances via model_dump().
+    """
     def default(self, obj):
         if isinstance(obj, BaseModel):
             return obj.model_dump()
         return super().default(obj)
 
 def init_db():
+    """
+    Initializes the SQLite database and creates the necessary tables 
+    for persistent map chunk and macro-world state storage.
+    """
     os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
+    # map_chunks: Stores local area state for the 100x100 global grid.
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS map_chunks (
             chunk_x INTEGER,
@@ -27,6 +36,7 @@ def init_db():
         )
     ''')
     
+    # saved_maps: Stores arbitrary map data (interiors, special locations) keyed by ID.
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS saved_maps (
             map_id TEXT PRIMARY KEY, 
@@ -38,10 +48,10 @@ def init_db():
     conn.close()
 
 def save_map_state(map_id: str, state_dict: dict):
+    """Saves a standalone map state (e.g., a dungeon or interior) to the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Ensure nested Pydantic models are serialized correctly
     data_str = json.dumps(state_dict, cls=PydanticEncoder)
     
     cursor.execute('''
@@ -53,7 +63,8 @@ def save_map_state(map_id: str, state_dict: dict):
     conn.commit()
     conn.close()
 
-def load_map_state(map_id: str) -> dict:
+def load_map_state(map_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a specific map state by its unique ID."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('SELECT map_data FROM saved_maps WHERE map_id=?', (map_id,))
@@ -64,7 +75,8 @@ def load_map_state(map_id: str) -> dict:
         return json.loads(result[0])
     return None
 
-def save_chunk(chunk_x, chunk_y, state_data):
+def save_chunk(chunk_x: int, chunk_y: int, state_data: Dict[str, Any]):
+    """Stores a local map chunk's state indexed by its global grid coordinates."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
@@ -81,7 +93,8 @@ def save_chunk(chunk_x, chunk_y, state_data):
     conn.commit()
     conn.close()
 
-def load_chunk(chunk_x, chunk_y):
+def load_chunk(chunk_x: int, chunk_y: int) -> Optional[Dict[str, Any]]:
+    """Loads a previously visited map chunk from the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('SELECT data_json FROM map_chunks WHERE chunk_x=? AND chunk_y=?', (chunk_x, chunk_y))
@@ -93,6 +106,7 @@ def load_chunk(chunk_x, chunk_y):
     return None
 
 def reset_world():
+    """Wipes the database file entirely to start a fresh simulation."""
     if os.path.exists(DB_NAME):
         try:
             os.remove(DB_NAME)
@@ -100,4 +114,5 @@ def reset_world():
             print("[Warning] Database file is locked. Manual reset required.")
     init_db()
 
+# Ensure DB is initialized on module load
 init_db()

@@ -1,20 +1,8 @@
-import urllib.request
-import json
-import time
+import state_manager
 
 def generate_flavor_text():
-    """Reads the JSON state with a retry loop and asks Ollama to narrate it."""
-    state = None
-    for _ in range(5):
-        try:
-            with open("local_map_state.json", "r") as f:
-                state = json.load(f)
-                break
-        except (PermissionError, json.JSONDecodeError):
-            time.sleep(0.01)
-            continue
-        except Exception:
-            break
+    """Reads the state via StateManager and asks Ollama to narrate it."""
+    state = state_manager.load_state()
 
     if not state:
         return "The Director is lost in thought (State Load Failed)."

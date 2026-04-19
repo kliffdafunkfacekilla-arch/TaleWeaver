@@ -91,7 +91,10 @@ class OstrakaGame:
             self.state["combat_log"] = ["Director: Simulation initialized. Welcome to the Shatterlands."]
 
     def _get_player(self):
-        return next((e for e in self.state["local_map_state"].get("entities", []) if e.get("type") == "player"), None)
+        """Fetches the currently active player entity based on state meta."""
+        active_name = self.state["local_map_state"].get("meta", {}).get("active_player_name", "Jax")
+        return next((e for e in self.state["local_map_state"].get("entities", []) 
+                    if e.get("type") == "player" and e.get("name") == active_name), None)
 
     def _get_world_context(self):
         """Reads active campaign data for AI immersion."""
@@ -103,33 +106,54 @@ class OstrakaGame:
         except:
             meta = self.state["local_map_state"].get("meta", {})
             region = meta.get("region_id", "Unknown")
-            return f"You are exploring the {region} region. Active Mode: {meta.get('encounter_mode','EXPLORATION')}"
+            active_p = meta.get("active_player_name", "Jax")
+            return f"Acting Player: {active_p}. Region: {region}. Mode: {meta.get('encounter_mode','EXPLORATION')}"
 
     def _handle_pipeline_turn(self, player_text):
         """Orchestrates the turn resolution within the unified UI console."""
-        ctx = self._get_world_context()
-        player = self._get_player()
-        
-        engine.log_message(f"> {player_text}", state=self.state)
-        
-        # 1. Intent Parsing
-        intent = self.parser.parse_player_input(player_text, ctx)
-        
-        # 2. Physics Resolution
-        # Force refresh state before execution to handle async changes
+        # 1. Capture current context and active player
         self.state = engine.load_state() 
+        player = self._get_player()
+        if not player: return
+        
+        ctx = self._get_world_context()
+        p_name = player.get("name", "Unknown")
+        engine.log_message(f"[{p_name}] > {player_text}", state=self.state)
+        
+        # 2. Intent Parsing (AI needs to know who is talking)
+        intent = self.parser.parse_player_input(f"[{p_name}] action: {player_text}", ctx)
+        
+        # 3. Physics Resolution
         res = self.game_physicist.execute_action(intent, player, self.state)
         
         # Update local diorama coords if move succeeded
         if res["status"] == "SUCCESS":
             self.current_x, self.current_y = player["pos"]
         
-        # 3. Narrative Generation
+        # 4. Narrative Generation
         story = self.storyteller.narrate_turn_result(res, ctx)
         engine.log_message(story, state=self.state)
         
-        # 4. Post-Turn Refresh
+        # 5. Post-Turn Refresh
         self.state = engine.load_state() 
+        engine.save_state(self.state)
+
+    def _cycle_active_player(self):
+        """Cycles the active_player_name in the state."""
+        self.state = engine.load_state()
+        players = [e.get("name") for e in self.state["local_map_state"].get("entities", []) if e.get("type") == "player"]
+        if not players: return
+        
+        curr = self.state["local_map_state"].get("meta", {}).get("active_player_name", "Jax")
+        idx = (players.index(curr) + 1) % len(players) if curr in players else 0
+        self.state["local_map_state"]["meta"]["active_player_name"] = players[idx]
+        
+        # Snap camera to new active player
+        new_player = self._get_player()
+        if new_player:
+            self.current_x, self.current_y = new_player["pos"]
+            
+        engine.log_message(f"Focus shifted to {players[idx]}.", state=self.state)
         engine.save_state(self.state)
 
     def _handle_input(self):
@@ -152,6 +176,8 @@ class OstrakaGame:
                     curr = ui_manager.UI_STATE["active_tab"]
                     if curr in tabs: idx = tabs.index(curr)
                     ui_manager.UI_STATE["active_tab"] = tabs[(idx + 1) % len(tabs)]
+                elif event.key == pygame.K_p:
+                    self._cycle_active_player()
                 elif len(event.unicode) > 0 and event.key not in [pygame.K_ESCAPE, pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_LCTRL, pygame.K_RCTRL]:
                     self.player_text += event.unicode
             

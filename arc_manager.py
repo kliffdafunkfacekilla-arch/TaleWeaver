@@ -1,8 +1,9 @@
 import json
 import os
 import sqlite3
-import requests
+import aiohttp
 import re
+import asyncio
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "llama3.1:8b-instruct-q3_K_L"
@@ -21,8 +22,8 @@ class StoryArchitect:
                 return None
         return None
 
-    def generate_arc_blueprint(self, region_x, region_y, faction, biome, chaos_level):
-        """Generates a strict JSON narrative blueprint based on world state."""
+    async def generate_arc_blueprint(self, region_x, region_y, faction, biome, chaos_level):
+        """Generates a strict JSON narrative blueprint based on world state (Async)."""
         prompt = f"""
         You are the master Campaign Director for the grim-steampunk RPG Ostraka.
         Generate a 3-node quest arc for the player based strictly on this world state:
@@ -56,16 +57,19 @@ class StoryArchitect:
         }
 
         try:
-            response = requests.post(OLLAMA_URL, json=payload, timeout=45)
-            response.raise_for_status()
-            blueprint = self._extract_json(response.json().get("response", ""))
-            return blueprint
+            async with aiohttp.ClientSession() as session:
+                async with session.post(OLLAMA_URL, json=payload, timeout=45) as response:
+                    if response.status == 200:
+                        res = await response.json()
+                        blueprint = self._extract_json(res.get("response", ""))
+                        return blueprint
+            return None
         except Exception as e:
             print(f"[Error] Failed to generate arc blueprint: {e}")
             return None
 
-    def inject_consequence_node(self, player_action, world_impact_summary):
-        """Mutates the active campaign JSON by injecting a consequence node based on disruption."""
+    async def inject_consequence_node(self, player_action, world_impact_summary):
+        """Mutates the active campaign JSON by injecting a consequence node based on disruption (Async)."""
         if not os.path.exists(self.save_path):
             print("[Error] No active campaign found to mutate.")
             return False
@@ -102,13 +106,13 @@ class StoryArchitect:
                 "options": {"temperature": 0.8, "num_ctx": 2048}
             }
 
-            response = requests.post(OLLAMA_URL, json=payload, timeout=45)
-            response.raise_for_status()
-            consequence_data = self._extract_json(response.json().get("response", ""))
+            async with aiohttp.ClientSession() as session:
+                async with session.post(OLLAMA_URL, json=payload, timeout=45) as response:
+                    res = await response.json()
+                    consequence_data = self._extract_json(res.get("response", ""))
+            
             if not consequence_data: return False
 
-            # SAFE ID ASSIGNMENT: String suffix prevents ID math collisions
-            # Using current_id + a unique sub-index
             sub_count = sum(1 for n in campaign["nodes"] if str(n.get("id", "")).startswith(f"{current_id}-"))
             new_id = f"{current_id}-FALLOUT-{sub_count + 1}"
 
@@ -119,7 +123,6 @@ class StoryArchitect:
                 "status": "pending"
             }
 
-            # Insert at current_node_index, pushing original node down
             campaign["nodes"].insert(idx, consequence_node)
             
             with open(self.save_path, "w") as f:
@@ -142,7 +145,3 @@ class StoryArchitect:
         except Exception as e:
             print(f"[Error] Failed to save blueprint: {e}")
             return False
-
-if __name__ == "__main__":
-    architect = StoryArchitect()
-    # Test would go here

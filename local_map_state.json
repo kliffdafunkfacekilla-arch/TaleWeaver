@@ -2,1265 +2,709 @@
   "local_map_state": {
     "entities": [
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "Jax",
+        "type": "player",
         "pos": [
-          0,
-          0
+          50,
+          50
+        ],
+        "hp": 20,
+        "max_hp": 20,
+        "stats": {
+          "Logic": 5,
+          "Charm": 5
+        },
+        "resources": {
+          "stamina": 10,
+          "max_stamina": 10,
+          "focus": 10,
+          "max_focus": 10
+        },
+        "inventory": [
+          "Bandage"
+        ],
+        "skills": [
+          "Slash"
         ],
         "tags": [
-          "solid",
-          "wall"
+          "unbreakable"
+        ],
+        "max_composure": 30,
+        "composure": 30,
+        "beats": {
+          "move": 3,
+          "stamina": 1,
+          "focus": 1
+        }
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          86,
+          98
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "pine_tree",
         "type": "prop",
         "pos": [
-          0,
-          1
+          51,
+          46
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "bear",
+        "type": "npc",
         "pos": [
-          0,
-          2
+          60,
+          22
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "berry_bush",
         "type": "prop",
         "pos": [
-          0,
-          3
+          56,
+          17
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          0,
-          4
+          86,
+          31
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "berry_bush",
         "type": "prop",
         "pos": [
-          0,
-          5
+          87,
+          63
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          0,
-          6
+          88,
+          86
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "berry_bush",
         "type": "prop",
         "pos": [
-          0,
-          7
+          30,
+          59
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          0,
-          8
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          0,
-          9
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          0,
-          10
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          0,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          1,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          1,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          2,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          2,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          3,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          3,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          4,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          4,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          5,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          5,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
+        "name": "wolf",
+        "type": "npc",
         "pos": [
           6,
-          0
+          87
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "wolf",
+        "type": "npc",
         "pos": [
-          7,
-          0
+          19,
+          60
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "pine_tree",
         "type": "prop",
         "pos": [
-          7,
-          11
+          89,
+          26
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "wolf",
+        "type": "npc",
         "pos": [
-          8,
-          0
+          98,
+          69
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "bear",
+        "type": "npc",
         "pos": [
-          8,
-          11
+          92,
+          28
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "pine_tree",
         "type": "prop",
         "pos": [
-          9,
-          0
+          23,
+          90
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          9,
-          11
+          33,
+          21
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          10,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          10,
-          11
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          11,
-          0
-        ],
-        "tags": [
-          "solid",
-          "wall"
-        ]
-      },
-      {
-        "name": "Wall",
-        "type": "prop",
-        "pos": [
-          11,
+          12,
           1
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          2
+          3,
+          82
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "bear",
+        "type": "npc",
         "pos": [
-          11,
-          3
+          38,
+          67
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          4
+          16,
+          25
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "berry_bush",
         "type": "prop",
         "pos": [
-          11,
-          5
+          49,
+          41
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
-        "type": "prop",
+        "name": "bear",
+        "type": "npc",
         "pos": [
-          11,
-          6
+          30,
+          46
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          7
+          63,
+          16
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          8
+          49,
+          59
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          9
+          63,
+          77
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "pine_tree",
         "type": "prop",
         "pos": [
-          11,
+          61,
+          43
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          7,
+          19
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          84,
+          92
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          30,
+          38
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          48,
+          17
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          18,
+          81
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          43,
+          45
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          38,
+          98
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          88,
+          26
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          97,
           10
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Wall",
+        "name": "thicket",
         "type": "prop",
         "pos": [
-          11,
-          11
+          31,
+          39
         ],
+        "hp": 5,
         "tags": [
-          "solid",
-          "wall"
+          "biome_spawn"
         ]
       },
       {
-        "name": "Specimen Tank",
+        "name": "pine_tree",
         "type": "prop",
         "pos": [
-          9,
+          54,
+          42
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          72,
+          76
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          13,
+          63
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "wolf",
+        "type": "npc",
+        "pos": [
+          79,
+          60
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          51,
+          67
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          39,
+          7
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          26,
+          26
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          44,
+          26
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          13,
+          10
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          71,
+          35
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          72,
+          44
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          94,
+          27
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "thicket",
+        "type": "prop",
+        "pos": [
+          21,
+          20
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          76,
+          22
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          63,
+          36
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "bear",
+        "type": "npc",
+        "pos": [
+          28,
+          35
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "pine_tree",
+        "type": "prop",
+        "pos": [
+          3,
+          80
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "berry_bush",
+        "type": "prop",
+        "pos": [
+          31,
+          97
+        ],
+        "hp": 5,
+        "tags": [
+          "biome_spawn"
+        ]
+      },
+      {
+        "name": "Crate",
+        "type": "prop",
+        "pos": [
+          5,
           5
-        ],
-        "tags": [
-          "solid"
-        ]
-      },
-      {
-        "name": "Bookshelf",
-        "type": "prop",
-        "pos": [
-          4,
-          6
-        ],
-        "tags": [
-          "solid"
-        ]
-      },
-      {
-        "name": "Bookshelf",
-        "type": "prop",
-        "pos": [
-          8,
-          2
-        ],
-        "tags": [
-          "solid"
         ]
       }
     ],
     "meta": {
       "grid_size": [
-        12,
-        12
+        100,
+        100
       ],
-      "region_id": "interior_Alchemist_Lab",
-      "clock": 0
+      "global_pos": [
+        0,
+        0
+      ],
+      "region_id": "pine_forest",
+      "clock": 0,
+      "campaign_tracker": {
+        "active_quest_deck": []
+      },
+      "in_combat": false,
+      "encounter_mode": "EXPLORATION",
+      "clue_tracker": []
     }
   },
-  "map_stack": [
-    {
-      "entities": [
-        {
-          "name": "Jax",
-          "type": "player",
-          "pos": [
-            50,
-            50
-          ],
-          "hp": 20,
-          "max_hp": 20,
-          "stats": {
-            "Logic": 5,
-            "Charm": 5
-          },
-          "resources": {
-            "stamina": 10,
-            "max_stamina": 10,
-            "focus": 10,
-            "max_focus": 10,
-            "beats": {
-              "move": 1,
-              "stamina": 1,
-              "focus": 1
-            },
-            "move_remaining": 1
-          },
-          "inventory": [
-            "Bandage"
-          ],
-          "skills": [
-            "Slash"
-          ],
-          "tags": [
-            "unbreakable"
-          ],
-          "max_composure": 10,
-          "composure": 10
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            86,
-            98
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            51,
-            46
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            60,
-            22
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            56,
-            17
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            86,
-            31
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            87,
-            63
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            88,
-            86
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            30,
-            59
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            6,
-            87
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            19,
-            60
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            89,
-            26
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            98,
-            69
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            92,
-            28
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            23,
-            90
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            33,
-            21
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            12,
-            1
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            3,
-            82
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            38,
-            67
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            16,
-            25
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            49,
-            41
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            30,
-            46
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            63,
-            16
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            49,
-            59
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            63,
-            77
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            61,
-            43
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            7,
-            19
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            84,
-            92
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            30,
-            38
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            48,
-            17
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            18,
-            81
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            43,
-            45
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            38,
-            98
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            88,
-            26
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            97,
-            10
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            31,
-            39
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            54,
-            42
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            72,
-            76
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            13,
-            63
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "wolf",
-          "type": "npc",
-          "pos": [
-            79,
-            60
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            51,
-            67
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            39,
-            7
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            26,
-            26
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            44,
-            26
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            13,
-            10
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            71,
-            35
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            72,
-            44
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            94,
-            27
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "thicket",
-          "type": "prop",
-          "pos": [
-            21,
-            20
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            76,
-            22
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            63,
-            36
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "bear",
-          "type": "npc",
-          "pos": [
-            28,
-            35
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "pine_tree",
-          "type": "prop",
-          "pos": [
-            3,
-            80
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        },
-        {
-          "name": "berry_bush",
-          "type": "prop",
-          "pos": [
-            31,
-            97
-          ],
-          "hp": 5,
-          "tags": [
-            "biome_spawn"
-          ]
-        }
-      ],
-      "meta": {
-        "grid_size": [
-          100,
-          100
-        ],
-        "global_pos": [
-          0,
-          0
-        ],
-        "region_id": "pine_forest",
-        "clock": 0,
-        "campaign_tracker": {
-          "active_quest_deck": []
-        },
-        "in_combat": false,
-        "encounter_mode": "EXPLORATION",
-        "clue_tracker": []
-      }
-    }
-  ],
+  "map_stack": [],
   "combat_log": [
     "Director: Welcome to Shatterlands.",
-    "\ud83d\udeaa Entered Alchemist Lab.",
-    "\ud83d\udeaa Entered Secret Vault.",
-    "\u2b06\ufe0f Returned to previous layer."
+    "\ud83d\udd0d Examining Crate... (20 + 10)",
+    "Nothing unusual found."
   ]
 }

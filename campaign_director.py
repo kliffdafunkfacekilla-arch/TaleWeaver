@@ -1,7 +1,8 @@
 import sqlite3
 import json
-import requests
+import aiohttp
 import os
+import asyncio
 
 # --- PATH CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +45,8 @@ class CampaignDirector:
 
         return context
 
-    def generate_macro_arc(self, l4_x, l4_y, l3_x, l3_y):
+    async def generate_macro_arc(self, l4_x, l4_y, l3_x, l3_y):
+        """Asynchronously generates a macro arc for a region."""
         print(f"DM Lens focused on L4[{l4_x},{l4_y}] -> L3[{l3_x},{l3_y}]...")
         world_data = self.get_regional_context(l4_x, l4_y, l3_x, l3_y)
         
@@ -71,13 +73,16 @@ class CampaignDirector:
         
         print(f"Thinking: LLM is architecting the regional conflict...")
         try:
-            response = requests.post(OLLAMA_URL, json=payload)
-            response.raise_for_status()
-            arc_text = response.json().get('response', '').strip()
-            self._save_arc(world_data, arc_text)
-            return arc_text
+            async with aiohttp.ClientSession() as session:
+                async with session.post(OLLAMA_URL, json=payload, timeout=30) as response:
+                    if response.status == 200:
+                        res_json = await response.json()
+                        arc_text = res_json.get('response', '').strip()
+                        self._save_arc(world_data, arc_text)
+                        return arc_text
+            return None
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             print(f"Error connecting to Ollama Brain: {e}")
             return None
 
@@ -93,8 +98,9 @@ class CampaignDirector:
 
 if __name__ == "__main__":
     dm = CampaignDirector()
-    print("Initializing Campaign Engine...")
-    arc = dm.generate_macro_arc(l4_x=5, l4_y=5, l3_x=42, l3_y=12)
+    print("Initializing Campaign Engine (Test Mode)...")
+    loop = asyncio.get_event_loop()
+    arc = loop.run_until_complete(dm.generate_macro_arc(l4_x=5, l4_y=5, l3_x=42, l3_y=12))
     
     if arc:
         print("\n=== CURRENT MACRO ARC ===")

@@ -1,10 +1,47 @@
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any
 import random
 import json
-import actions
 import os
+import actions
 
 ITEM_CACHE = None
 SKILL_CACHE = None
+
+class ResourcePool(BaseModel):
+    stamina: int = 10
+    max_stamina: int = 10
+    focus: int = 10
+    max_focus: int = 10
+    move_remaining: int = 0
+    beats: Dict[str, int] = Field(default_factory=lambda: {"move": 1, "stamina": 1, "focus": 1})
+    composure: int = 20
+    max_composure: int = 20
+
+class Entity(BaseModel):
+    id: str = Field(default_factory=lambda: str(random.randint(1000, 9999)))
+    name: str
+    type: str  # player, npc, prop, hostile
+    pos: List[int] = Field(default_factory=lambda: [0, 0])
+    hp: int = 20
+    max_hp: int = 20
+    stats: Dict[str, int] = Field(default_factory=dict)
+    resources: ResourcePool = Field(default_factory=ResourcePool)
+    inventory: List[str] = Field(default_factory=list)
+    skills: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    equipment: Dict[str, str] = Field(default_factory=lambda: {"weapon": "None", "armor": "None", "accessory": "None"})
+    tracks: Dict[str, str] = Field(default_factory=lambda: {"offense": "Might", "defense": "Reflexes"})
+
+    def get(self, key, default=None):
+        # Compatibility helper for transition
+        return getattr(self, key, default)
+
+    def setdefault(self, key, default=None):
+        # Compatibility helper
+        if not hasattr(self, key):
+            setattr(self, key, default)
+        return getattr(self, key)
 
 def load_items():
     global ITEM_CACHE
@@ -43,10 +80,12 @@ def get_item_weight(item_name):
     return 0
 
 def loot_all(looter, target):
-    if "inventory" not in target or not target["inventory"]: return False
-    if "inventory" not in looter: looter["inventory"] = []
-    looter["inventory"].extend(target["inventory"])
-    target["inventory"] = [] 
+    t_inv = target.inventory if hasattr(target, "inventory") else target.get("inventory", [])
+    if not t_inv: return False
+    l_inv = looter.inventory if hasattr(looter, "inventory") else looter.setdefault("inventory", [])
+    l_inv.extend(t_inv)
+    if hasattr(target, "inventory"): target.inventory = []
+    else: target["inventory"] = []
     return True
 
 def equip_item(entity, item_name):
@@ -56,22 +95,25 @@ def equip_item(entity, item_name):
     elif item_name in items.get("armor", {}): item_type = "armor"
     elif item_name in items.get("accessories", {}): item_type = "accessory"
     
-    if not item_type or item_name not in entity.get("inventory", []): return False
+    inv = entity.inventory if hasattr(entity, "inventory") else entity.get("inventory", [])
+    if not item_type or item_name not in inv: return False
 
-    current = entity.get("equipment", {}).get(item_type)
+    equip = entity.equipment if hasattr(entity, "equipment") else entity.setdefault("equipment", {})
+    current = equip.get(item_type)
     if current and current != "None":
-        entity["inventory"].append(current)
+        inv.append(current)
         
-    entity["equipment"][item_type] = item_name
-    entity["inventory"].remove(item_name)
+    equip[item_type] = item_name
+    inv.remove(item_name)
     return True
 
 def unequip_item(entity, slot):
-    current = entity.get("equipment", {}).get(slot)
+    equip = entity.equipment if hasattr(entity, "equipment") else entity.get("equipment", {})
+    current = equip.get(slot)
     if current and current != "None":
-        if "inventory" not in entity: entity["inventory"] = []
-        entity["inventory"].append(current)
-        entity["equipment"][slot] = "None"
+        inv = entity.inventory if hasattr(entity, "inventory") else entity.setdefault("inventory", [])
+        inv.append(current)
+        equip[slot] = "None"
         return True
     return False
 
@@ -97,7 +139,9 @@ def get_gear_bonus(entity, stat_name):
     return bonus
 
 def get_stat(entity, stat_name):
-    base = entity.get("stats", {}).get(stat_name, 0)
+    # Support both dict and Pydantic object
+    stats = entity.stats if hasattr(entity, "stats") else entity.get("stats", {})
+    base = stats.get(stat_name, 0)
     base += get_gear_bonus(entity, stat_name)
     return base
 
@@ -179,21 +223,26 @@ def get_max_focus(entity):
     return max(1, base_max - tax)
 
 def spend_stamina(entity, amount):
-    res = entity.get("resources", {})
-    if res.get("stamina", 0) >= amount:
-        res["stamina"] -= amount
+    res = entity.resources if hasattr(entity, "resources") else entity.get("resources", {})
+    curr = res.stamina if hasattr(res, "stamina") else res.get("stamina", 0)
+    if curr >= amount:
+        if hasattr(res, "stamina"): res.stamina -= amount
+        else: res["stamina"] -= amount
         return True
     return False
 
 def refresh_beats(entity):
-    if "resources" not in entity: entity["resources"] = {}
-    tags = entity.get("tags", [])
+    res = entity.resources if hasattr(entity, "resources") else entity.setdefault("resources", {})
+    tags = entity.tags if hasattr(entity, "tags") else entity.get("tags", [])
     
     mv = 0 if "staggered" in tags else 1
     st = 0 if "stunned" in tags else 1
     fo = 1 
     
-    entity["resources"]["beats"] = {"move": mv, "stamina": st, "focus": fo}
+    if hasattr(res, "beats"):
+        res.beats = {"move": mv, "stamina": st, "focus": fo}
+    else:
+        res["beats"] = {"move": mv, "stamina": st, "focus": fo}
 
 def grant_free_beat(entity, beat_type):
     current_beats = entity.setdefault("resources", {}).setdefault("beats", {"move": 0, "stamina": 0, "focus": 0})
@@ -204,41 +253,45 @@ def grant_free_beat(entity, beat_type):
     return False
 
 def consume_beat(entity, beat_type):
-    res = entity.get("resources", {})
-    beats = res.get("beats", {})
+    res = entity.resources if hasattr(entity, "resources") else entity.get("resources", {})
+    beats = res.beats if hasattr(res, "beats") else res.get("beats", {})
     if beats.get(beat_type, 0) > 0:
         beats[beat_type] -= 1
         return True
     return False
 
 def apply_damage(entity, amount, damage_type="physical"):
-    if damage_type == "physical" and "hp" in entity:
-        entity["hp"] -= amount
-        max_hp = entity.get("max_hp", 20)
-        tags = entity.setdefault("tags", [])
+    if damage_type == "physical":
+        hp = entity.hp if hasattr(entity, "hp") else entity.get("hp", 0)
+        max_hp = entity.max_hp if hasattr(entity, "max_hp") else entity.get("max_hp", 20)
+        
+        new_hp = max(0, hp - amount)
+        if hasattr(entity, "hp"): entity.hp = new_hp
+        else: entity["hp"] = new_hp
+        
+        tags = entity.tags if hasattr(entity, "tags") else entity.setdefault("tags", [])
         trauma_msg = ""
         
         if amount >= (max_hp * 0.4):
             if "maimed" not in tags: 
                 tags.append("maimed")
                 if "staggered" not in tags: tags.append("staggered")
-                trauma_msg = f"🩸 [TRAUMA] {entity['name']} suffers a massive blow and is MAIMED!"
+                trauma_msg = f"🩸 [TRAUMA] {getattr(entity, 'name', 'Enemy')} suffers a massive blow and is MAIMED!"
                 
-        if entity["hp"] > 0 and entity["hp"] <= (max_hp * 0.25):
+        if new_hp > 0 and new_hp <= (max_hp * 0.25):
             if "bleeding" not in tags:
                 tags.append("bleeding")
                 if not trauma_msg:
-                    trauma_msg = f"🩸 [TRAUMA] {entity['name']} is heavily wounded and BLEEDING!"
+                    trauma_msg = f"🩸 [TRAUMA] {getattr(entity, 'name', 'Enemy')} is heavily wounded and BLEEDING!"
                 else:
                     trauma_msg += " and BLEEDING!"
 
-        if entity["hp"] <= 0:
-            entity["hp"] = 0
-            if "hostile" in entity.get("tags", []): entity["tags"].remove("hostile")
-            if "dead" not in entity.get("tags", []): entity["tags"].append("dead")
-            return True, f"💀 {entity['name']} has fallen." # Target died
+        if new_hp <= 0:
+            if "hostile" in tags: tags.remove("hostile")
+            if "dead" not in tags: tags.append("dead")
+            return True, f"💀 {getattr(entity, 'name', 'Enemy')} has fallen."
             
-        return False, trauma_msg # Target survived
+        return False, trauma_msg
             
     return False, ""
 
@@ -271,9 +324,13 @@ def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
     return total, roll_log
 
 def regenerate_resources(entity):
-    res = entity.setdefault("resources", {})
-    max_s = res.get("max_stamina", 10)
-    max_f = res.get("max_focus", 10)
+    res = entity.resources if hasattr(entity, "resources") else entity.setdefault("resources", {})
+    max_s = res.max_stamina if hasattr(res, "max_stamina") else res.get("max_stamina", 10)
+    max_f = res.max_focus if hasattr(res, "max_focus") else res.get("max_focus", 10)
     
-    res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
-    res["focus"] = min(max_f, res.get("focus", 0) + 2)
+    if hasattr(res, "stamina"):
+        res.stamina = min(max_s, res.stamina + 2)
+        res.focus = min(max_f, res.focus + 2)
+    else:
+        res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
+        res["focus"] = min(max_f, res.get("focus", 0) + 2)

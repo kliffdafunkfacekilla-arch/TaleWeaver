@@ -1,318 +1,109 @@
 import random
-import json
-import actions
-import os
+import math
 
-ITEM_CACHE = None
-SKILL_CACHE = None
+# Reputation Tiers
+REPUTATION_TIERS = {
+    "OUTCAST": {"min": -100, "max": -81, "reaction": "Hostile", "price_mod": 2.0},
+    "HOSTILE": {"min": -80, "max": -41, "reaction": "Wary", "price_mod": 1.5},
+    "NEUTRAL": {"min": -40, "max": 10, "reaction": "Neutral", "price_mod": 1.0},
+    "LIKED": {"min": 11, "max": 40, "reaction": "Friendly", "price_mod": 0.9},
+    "ALLIED": {"min": 41, "max": 80, "reaction": "Helpful", "price_mod": 0.7},
+    "CHAMPION": {"min": 81, "max": 100, "reaction": "Exalted", "price_mod": 0.5}
+}
 
-def load_items():
-    global ITEM_CACHE
-    if ITEM_CACHE is not None:
-        return ITEM_CACHE
-        
-    try:
-        with open("data/items.json", "r", encoding="utf-8") as f: 
-            ITEM_CACHE = json.load(f)
-            return ITEM_CACHE
-    except Exception: 
-        return {"weapons":{}, "armor":{}, "accessories":{}, "consumables":{}}
-
-def load_skills():
-    """Reads the skills database and caches it for performance."""
-    global SKILL_CACHE
-    if SKILL_CACHE is not None:
-        return SKILL_CACHE
-        
-    try:
-        if not os.path.exists("data/skills.json"):
-            return {"passives": {}, "tactics": {}, "anomalies": {}}
-            
-        with open("data/skills.json", "r", encoding="utf-8") as f: 
-            SKILL_CACHE = json.load(f)
-            return SKILL_CACHE
-    except Exception as e:
-        print(f"[Error] Failed to load skills: {e}")
-        return {"passives": {}, "tactics": {}, "anomalies": {}}
-
-def get_item_weight(item_name):
-    items = load_items()
-    for cat in ["weapons", "armor", "accessories", "consumables"]:
-        if item_name in items.get(cat, {}):
-            return items[cat][item_name].get("weight", 0)
-    return 0
-
-def loot_all(looter, target):
-    if "inventory" not in target or not target["inventory"]: return False
-    if "inventory" not in looter: looter["inventory"] = []
-    looter["inventory"].extend(target["inventory"])
-    target["inventory"] = [] 
-    return True
-
-def equip_item(entity, item_name):
-    items = load_items()
-    item_type = None
-    if item_name in items.get("weapons", {}): item_type = "weapon"
-    elif item_name in items.get("armor", {}): item_type = "armor"
-    elif item_name in items.get("accessories", {}): item_type = "accessory"
-    
-    if not item_type or item_name not in entity.get("inventory", []): return False
-
-    current = entity.get("equipment", {}).get(item_type)
-    if current and current != "None":
-        entity["inventory"].append(current)
-        
-    entity["equipment"][item_type] = item_name
-    entity["inventory"].remove(item_name)
-    return True
-
-def unequip_item(entity, slot):
-    current = entity.get("equipment", {}).get(slot)
-    if current and current != "None":
-        if "inventory" not in entity: entity["inventory"] = []
-        entity["inventory"].append(current)
-        entity["equipment"][slot] = "None"
-        return True
-    return False
-
-def get_gear_bonus(entity, stat_name):
-    """Dynamically looks for {stat_name}_bonus in equipped items."""
-    items = load_items()
-    bonus = 0
-    equip = entity.get("equipment", {})
-    bonus_key = f"{stat_name.lower()}_bonus"
-    
-    for slot, item_name in equip.items():
-        if not item_name or item_name == "None": continue
-        
-        item_data = None
-        for cat in ["weapons", "armor", "accessories"]:
-            if item_name in items.get(cat, {}):
-                item_data = items[cat][item_name]
-                break
-        
-        if item_data and bonus_key in item_data:
-            bonus += item_data[bonus_key]
-            
-    return bonus
+def get_reputation_tier(value):
+    """Returns the tier name based on a numeric value."""
+    for tier, bounds in REPUTATION_TIERS.items():
+        if bounds["min"] <= value <= bounds["max"]:
+            return tier
+    return "NEUTRAL"
 
 def get_stat(entity, stat_name):
-    base = entity.get("stats", {}).get(stat_name, 0)
-    base += get_gear_bonus(entity, stat_name)
-    return base
+    """Retrieves a base stat or a derived/buffed value."""
+    base = entity.get("stats", {}).get(stat_name, 5)
+    bonus = get_gear_bonus(entity, stat_name)
+    return base + bonus
 
-def get_attack_stat(entity):
-    """B.R.U.T.A.L. Engine: Returns the stat used for the Offense Track."""
-    return entity.get("tracks", {}).get("offense", "Might")
-
-def get_defense_stat(entity):
-    """B.R.U.T.A.L. Engine: Returns the stat used for the Defense Track."""
-    return entity.get("tracks", {}).get("defense", "Reflexes")
-
-def get_weapon_stats(entity):
-    """Retrieves damage and range based on equipped weapon."""
-    items = load_items()
-    equipped_weapon = entity.get("equipment", {}).get("weapon")
-    
-    if equipped_weapon and equipped_weapon in items.get("weapons", {}):
-        w = items["weapons"][equipped_weapon]
-        return {
-            "name": equipped_weapon,
-            "die": w.get("damage_die", 4),
-            "flat": w.get("flat_damage", 0),
-            "range": w.get("range", 1),
-            "cost": w.get("stamina_cost", 2),
-            "tags": w.get("tags", [])
-        }
-    
-    unarmed = items.get("weapons", {}).get("Unarmed", {"damage_die": 4, "flat_damage": 0, "range": 1, "stamina_cost": 1})
-    return {
-        "name": "Unarmed",
-        "die": unarmed.get("damage_die", 4),
-        "flat": unarmed.get("flat_damage", 0),
-        "range": unarmed.get("range", 1),
-        "cost": unarmed.get("stamina_cost", 1),
-        "tags": unarmed.get("tags", [])
-    }
+def get_gear_bonus(entity, stat_name):
+    """Scans tags for stat modifiers (e.g., 'bonus_Might_2')."""
+    bonus = 0
+    for tag in entity.get("tags", []):
+        if tag.startswith(f"bonus_{stat_name}_"):
+            try: bonus += int(tag.split("_")[-1])
+            except: pass
+    return bonus
 
 def get_derived_stats(entity):
+    s = entity.get("stats", {})
     return {
-        "Perception": get_stat(entity, "Awareness") + get_stat(entity, "Logic") + get_stat(entity, "Vitality"),
-        "Stealth": get_stat(entity, "Knowledge") + get_stat(entity, "Charm") + get_stat(entity, "Finesse"),
-        "Movement": get_stat(entity, "Reflexes") + get_stat(entity, "Might") + get_stat(entity, "Intuition"),
-        "Balance": get_stat(entity, "Endurance") + get_stat(entity, "Fortitude") + get_stat(entity, "Willpower")
+        "Movement": 3 + (s.get("Reflexes", 5) // 3),
+        "Perception": 10 + s.get("Awareness", 5),
+        "Defense": 10 + s.get("Reflexes", 5),
+        "Willpower": 10 + s.get("Willpower", 5)
     }
 
-def get_movement_speed(entity):
-    stats = get_derived_stats(entity)
-    return max(1, stats.get("Movement", 1))
-
-def get_best_stat_for_action(player, action_name):
-    data = actions.ACTION_REGISTRY.get(action_name)
-    if not data or not data.get("stats"): return None
-    
-    best_stat = data["stats"][0]
-    best_val = -1
-    
-    for stat in data["stats"]:
-        val = get_stat(player, stat)
-        if val > best_val:
-            best_val = val
-            best_stat = stat
-            
-    return best_stat
-
 def get_max_stamina(entity):
-    base_max = entity.get("resources", {}).get("max_stamina", 10)
-    items = load_items()
-    equip = entity.get("equipment", {})
-    armor = items.get("armor", {}).get(equip.get("armor"))
-    tax = armor.get("stamina_tax", 0) if armor else 0
-    return max(1, base_max - tax)
+    return 10 + (entity.get("stats", {}).get("Endurance", 5) * 2)
 
 def get_max_focus(entity):
-    base_max = entity.get("resources", {}).get("max_focus", 10)
-    items = load_items()
-    equip = entity.get("equipment", {})
-    acc = items.get("accessories", {}).get(equip.get("accessory"))
-    tax = acc.get("focus_tax", 0) if acc else 0
-    return max(1, base_max - tax)
+    return 10 + (entity.get("stats", {}).get("Knowledge", 5) * 2)
 
 def get_max_composure(entity):
-    """Derived Composure: Base 10 + Willpower + Intuition."""
-    return 10 + get_stat(entity, "Willpower") + get_stat(entity, "Intuition")
-
-def spend_stamina(entity, amount):
-    res = entity.get("resources", {})
-    if res.get("stamina", 0) >= amount:
-        res["stamina"] -= amount
-        return True
-    return False
+    s = entity.get("stats", {})
+    return 20 + s.get("Willpower", 5) + s.get("Intuition", 5)
 
 def refresh_beats(entity):
-    if "resources" not in entity: entity["resources"] = {}
-    tags = entity.get("tags", [])
-    
-    mv = 0 if "staggered" in tags else 1
-    st = 0 if "stunned" in tags else 1
-    fo = 1 
-    
-    entity["resources"]["beats"] = {"move": mv, "stamina": st, "focus": fo}
-    # MOVEMENT RESERVOIR: Allow movement up to speed per move beat
-    entity["resources"]["move_remaining"] = get_movement_speed(entity) if mv > 0 else 0
-
-def grant_free_beat(entity, beat_type):
-    current_beats = entity.setdefault("resources", {}).setdefault("beats", {"move": 0, "stamina": 0, "focus": 0})
-    
-    if current_beats.get(beat_type, 0) < 2:
-        current_beats[beat_type] += 1
-        return True
-    return False
+    """Resets action beats for a new turn pulse."""
+    max_beats = 2 + (entity.get("stats", {}).get("Finesse", 5) // 4)
+    entity["beats"] = {"move": max_beats, "stamina": 1, "focus": 1}
 
 def consume_beat(entity, beat_type):
-    res = entity.get("resources", {})
-    beats = res.get("beats", {})
-    if beats.get(beat_type, 0) > 0:
-        beats[beat_type] -= 1
+    if entity.get("beats", {}).get(beat_type, 0) > 0:
+        entity["beats"][beat_type] -= 1
         return True
     return False
 
-def apply_damage(entity, amount, damage_type="physical"):
-    """
-    Physical damage reduces HP. Mental damage reduces Composure.
-    Returning (is_dead, trauma_msg).
-    """
-    if damage_type == "physical" and "hp" in entity:
-        entity["hp"] -= amount
-        max_hp = entity.get("max_hp", 20)
-        tags = entity.setdefault("tags", [])
-        trauma_msg = ""
-        
-        if amount >= (max_hp * 0.4):
-            if "maimed" not in tags: 
-                tags.append("maimed")
-                if "staggered" not in tags: tags.append("staggered")
-                trauma_msg = f"\ud83e\ude78 [TRAUMA] {entity['name']} suffers a massive blow and is MAIMED!"
-                
-        if entity["hp"] > 0 and entity["hp"] <= (max_hp * 0.25):
-            if "bleeding" not in tags:
-                tags.append("bleeding")
-                if not trauma_msg:
-                    trauma_msg = f"\ud83e\ude78 [TRAUMA] {entity['name']} is heavily wounded and BLEEDING!"
-                else:
-                    trauma_msg += " and BLEEDING!"
-
-        if entity["hp"] <= 0:
-            entity["hp"] = 0
-            if "hostile" in entity.get("tags", []): entity["tags"].remove("hostile")
-            if "dead" not in entity.get("tags", []): entity["tags"].append("dead")
-            return True, f"\ud83d\udc80 {entity['name']} has fallen." 
-            
-        return False, trauma_msg
-            
-    elif damage_type == "mental" and "composure" in entity:
-        entity["composure"] -= amount
-        max_comp = get_max_composure(entity)
-        tags = entity.setdefault("tags", [])
-        trauma_msg = ""
-        
-        if amount >= (max_comp * 0.4):
-            if "shaken" not in tags:
-                tags.append("shaken")
-                trauma_msg = f"\ud83e\udde0 [MENTAL TRAUMA] {entity['name']}'s resolve is SHAKEN!"
-        
-        if entity["composure"] <= 0:
-            entity["composure"] = 0
-            if "broken" not in tags: tags.append("broken")
-            # In Social Combat, 'broken' usually ends the fight with compliance
-            return True, f"\ud83c\udff3\ufe0f {entity['name']}'s will scales. They are BROKEN."
-
-        return False, trauma_msg
-
-    return False, ""
-
-def roll_check(entity, stat_name, situational_adv=False, situational_dis=False):
-    tags = entity.get("tags", [])
-    has_adv = situational_adv
-    has_dis = situational_dis
-    
-    if "staggered" in tags or "prone" in tags or "terrified" in tags:
-        has_dis = True
-    if "focused" in tags:
-        has_adv = True
-    if has_adv and has_dis:
-        has_adv = has_dis = False
-
-    roll_1 = random.randint(1, 20)
-    roll_2 = random.randint(1, 20)
-    
-    if has_adv:
-        base_roll = max(roll_1, roll_2)
-        roll_log = f"[Advantage: Rolled {roll_1} & {roll_2} -> {base_roll}]"
-    elif has_dis:
-        base_roll = min(roll_1, roll_2)
-        roll_log = f"[Disadvantage: Rolled {roll_1} & {roll_2} -> {base_roll}]"
-    else:
-        base_roll = roll_1
-        roll_log = f"[Rolled {base_roll}]"
-
-    # Support for multi-stat skills (e.g. "Charm+Logic")
-    if "+" in stat_name:
-        stats = stat_name.split("+")
-        bonus = sum(get_stat(entity, s.strip()) for s in stats)
-    else:
-        bonus = get_stat(entity, stat_name)
-
-    total = base_roll + bonus
-    return total, roll_log
-
 def regenerate_resources(entity):
+    """Passive recovery per turn."""
     res = entity.setdefault("resources", {})
-    max_s = get_max_stamina(entity)
-    max_f = get_max_focus(entity)
+    res["stamina"] = min(res.get("max_stamina", 10), res.get("stamina", 0) + 2)
+    res["focus"] = min(res.get("max_focus", 10), res.get("focus", 0) + 1)
     
-    res["stamina"] = min(max_s, res.get("stamina", 0) + 2)
-    res["focus"] = min(max_f, res.get("focus", 0) + 2)
-    
-    if "composure" in entity:
-        entity["composure"] = min(get_max_composure(entity), entity["composure"] + 1)
+    # Composure regeneration
+    entity["composure"] = min(get_max_composure(entity), entity.get("composure", 20) + 1)
+
+def roll_check(entity, stat_expression):
+    """Handles multi-stat rolls (e.g. 'Charm+Logic')."""
+    stats = stat_expression.split('+')
+    bonus = sum(get_stat(entity, s.strip()) for s in stats)
+    roll = random.randint(1, 20)
+    total = roll + bonus
+    return total, f"({roll} + {bonus})"
+
+def apply_damage(entity, amount, damage_type="physical"):
+    """Reduces HP or Composure and applies trauma tags."""
+    if damage_type == "physical":
+        entity["hp"] = max(0, entity.get("hp", 0) - amount)
+        if entity["hp"] <= 0:
+            entity["tags"] = list(set(entity.get("tags", []) + ["dead"]))
+            return True, "DEAD"
+    else: # Mental/Social damage
+        entity["composure"] = max(0, entity.get("composure", 0) - amount)
+        if entity["composure"] <= 0:
+            new_tags = ["broken", "shaken"]
+            entity["tags"] = list(set(entity.get("tags", []) + new_tags))
+            return True, "SHAKEN"
+    return False, None
+
+def get_movement_speed(entity):
+    return 3 + (get_stat(entity, "Reflexes") // 3)
+
+def get_weapon_stats(entity):
+    # Default weapon if none equipped
+    return {"range": 1, "die": 6, "flat": 1, "cost": 3}
+
+def get_attack_stat(entity):
+    return "Might" if random.random() > 0.5 else "Reflexes"
+
+def get_defense_stat(entity):
+    return "Reflexes"

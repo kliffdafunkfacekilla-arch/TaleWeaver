@@ -12,18 +12,30 @@ import actions
 import quest_manager
 import state_manager
 
+def hydrate_state(state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Ensures all raw dictionaries in the map state are converted to 
+    high-fidelity Pydantic Entity objects for UI and logic compatibility.
+    """
+    if "local_map_state" in state and "entities" in state["local_map_state"]:
+        state["local_map_state"]["entities"] = [
+            entities.Entity.model_validate(e) if isinstance(e, dict) else e 
+            for e in state["local_map_state"]["entities"]
+        ]
+    return state
+
 def load_state() -> Dict[str, Any]:
     """
     Retrieves the current world state from StateManager.
     If no state exists, initializes a new game world.
     
     Returns:
-        Dict[str, Any]: The complete world and map state.
+        Dict[str, Any]: The complete world and map state (Hydrated).
     """
     state_data = state_manager.load_state()
     if not state_data or "local_map_state" not in state_data:
         return start_new_game()
-    return state_data
+    return hydrate_state(state_data)
 
 def save_state(state: Dict[str, Any]):
     """
@@ -58,7 +70,8 @@ def start_new_game() -> Dict[str, Any]:
         Dict[str, Any]: The newly generated game state.
     """
     db_manager.reset_world()
-    map_generator.generate_local_map([0,0], [25,25])
+    # Initialize at the center of a 100x100 grid
+    map_generator.MapGenerator(width=100, height=100).generate_local_map([0,0], [50,50])
     
     state = {}
     state_path = "state/local_map_state.json"
@@ -83,11 +96,7 @@ def start_new_game() -> Dict[str, Any]:
     })
     
     # Process entities into Pydantic models for type safety
-    if "local_map_state" in state and "entities" in state["local_map_state"]:
-        state["local_map_state"]["entities"] = [
-            entities.Entity.model_validate(e) if isinstance(e, dict) else e 
-            for e in state["local_map_state"]["entities"]
-        ]
+    hydrate_state(state)
         
     player = next((e for e in state["local_map_state"].get("entities", []) if e.type == "player"), None)
     if player: 
@@ -424,7 +433,7 @@ def execute_transition(dest_x: int, dest_y: int) -> str:
     
     if player_data: 
         state_data["local_map_state"]["entities"].remove(player_data)
-    db_manager.save_chunk(global_pos[0], global_pos[1], state_data)
+    db_manager.save_chunk(f"{global_pos[0]}_{global_pos[1]}", state_data)
     
     new_g_x, new_g_y = global_pos[0], global_pos[1]
     entry_x, entry_y = dest_x, dest_y
@@ -433,8 +442,9 @@ def execute_transition(dest_x: int, dest_y: int) -> str:
     if dest_y >= grid_h - 1: new_g_y += 1; entry_y = 1
     elif dest_y <= 0: new_g_y -= 1; entry_y = grid_h - 2
     
-    new_state = db_manager.load_chunk(new_g_x, new_g_y)
+    new_state = db_manager.load_chunk(f"{new_g_x}_{new_g_y}")
     if new_state:
+        new_state = hydrate_state(new_state)
         if player_data: 
             player_data.pos = [entry_x, entry_y]
             new_state["local_map_state"]["entities"].append(player_data)

@@ -3,7 +3,28 @@ from typing import List, Dict, Optional, Any
 import random
 import json
 import os
-import actions
+from typing import Tuple
+
+class WorldCoord(BaseModel):
+    """
+    Precision Coordinate System for the Ostraka Fractal Engine.
+    Scales from 10x10 Global down to 100x100 Local.
+    """
+    gx: int = 5  # Global (10x10)
+    gy: int = 5
+    cx: int = 50 # Continental (100x100)
+    cy: int = 50
+    rx: int = 50 # Regional (100x100)
+    ry: int = 50
+    lx: int = 50 # Local (100x100 tactical)
+    ly: int = 50
+
+    def to_key(self) -> str:
+        """Returns a unique string key for database indexing."""
+        return f"{self.gx}_{self.gy}_{self.cx}_{self.cy}_{self.rx}_{self.ry}"
+
+    def to_tuple(self) -> Tuple[int, ...]:
+        return (self.gx, self.gy, self.cx, self.cy, self.rx, self.ry, self.lx, self.ly)
 
 # Global caches for JSON databases to avoid repeated disk I/O
 ITEM_CACHE: Optional[Dict[str, Any]] = None
@@ -220,6 +241,7 @@ def get_movement_speed(entity: Entity) -> int:
 
 def get_best_stat_for_action(player: Entity, action_name: str) -> Optional[str]:
     """Determines which of a list of valid stats for an action is highest."""
+    import actions
     data = actions.ACTION_REGISTRY.get(action_name)
     if not data or not data.get("stats"): return None
     

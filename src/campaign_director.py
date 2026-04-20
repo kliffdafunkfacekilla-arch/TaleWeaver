@@ -89,3 +89,60 @@ class CampaignDirector:
                 json.dump(data, f, indent=2)
         except Exception as e:
             print(f"[Director Error] Failed to update faction rep: {e}")
+
+    def evaluate_spawns(self, global_pos: List[int], quest_deck: List[Dict[str, Any]], chaos_level: int = 5) -> List[Dict[str, Any]]:
+        """
+        Determines which NPCs/Objects should spawn on a local map based on narrative context.
+        
+        Args:
+            global_pos: The [x,y] world coordinates.
+            quest_deck: The active sequence of quest nodes.
+            chaos_level: The local instability (0-20).
+            
+        Returns:
+            List[Dict[str, Any]]: A list of entity definitions to spawn.
+        """
+        spawns = []
+        
+        # 1. Quest Spawns (Highest Priority)
+        if quest_deck:
+            current_node = quest_deck[0]
+            # If the current quest step involves a specific target or faction, spawn them.
+            if current_node.get("type") in ["combat", "climax", "scout"]:
+                faction = current_node.get("faction", "wild_beasts")
+                threat = current_node.get("threat", 1)
+                
+                # Boss/Elite spawn for climax
+                if current_node.get("type") == "climax":
+                    spawns.append({
+                        "name": f"{faction.capitalize()} Leader",
+                        "type": "hostile",
+                        "tags": ["hostile", "elite", faction]
+                    })
+                
+                # Standard mooks based on threat
+                for i in range(random.randint(1, threat + 1)):
+                    spawns.append({
+                        "name": f"{faction.capitalize()} Scout",
+                        "type": "hostile",
+                        "tags": ["hostile", faction]
+                    })
+
+        # 2. Random Disruptions (Only if Chaos Level is high)
+        if chaos_level > 15:
+            if random.random() < 0.3:
+                spawns.append({
+                    "name": "Opportunistic Scavenger",
+                    "type": "hostile",
+                    "tags": ["hostile", "neutral"]
+                })
+
+        # 3. Static/Atmospheric NPCs (Non-Hostile)
+        if random.random() < 0.1:
+            spawns.append({
+                "name": "Wandering Nomad",
+                "type": "npc",
+                "tags": ["friendly", "trader"]
+            })
+            
+        return spawns

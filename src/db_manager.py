@@ -18,21 +18,19 @@ class PydanticEncoder(json.JSONEncoder):
 
 def init_db():
     """
-    Initializes the SQLite database and creates the necessary tables 
-    for persistent map chunk and macro-world state storage.
+    Initializes the SQLite database and creates the necessary tables.
+    Includes a lightweight migration layer to sync existing schemas.
     """
     os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # map_chunks: Stores local area state for the 100x100 global grid.
+    # map_chunks: Stores local area state for the recursive fractal grid.
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS map_chunks (
-            chunk_x INTEGER,
-            chunk_y INTEGER,
+            map_key TEXT PRIMARY KEY,
             data_json TEXT,
-            last_visited_clock INTEGER,
-            PRIMARY KEY (chunk_x, chunk_y)
+            last_visited_clock INTEGER
         )
     ''')
     
@@ -44,39 +42,110 @@ def init_db():
         )
     ''')
     
+    # map_states: Stores tactical map data.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS map_states (
+            map_id TEXT PRIMARY KEY,
+            data TEXT
+        )
+    ''')
+
+    # buildings: Stores settlement infrastructure and production.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS buildings (
+            id TEXT PRIMARY KEY,
+            settlement_id TEXT,
+            type TEXT,
+            resource_generated TEXT,
+            yield_per_pulse INTEGER
+        )
+    ''')
+
+    # trade_routes: Stores caravan logic and economic flows.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS trade_routes (
+            id TEXT PRIMARY KEY,
+            source_settlement_id TEXT,
+            target_settlement_id TEXT,
+            goods_type TEXT,
+            caravan_status TEXT
+        )
+    ''')
+
+    # resource_nodes: Stores harvestable map features.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS resource_nodes (
+            id TEXT PRIMARY KEY,
+            node_type TEXT,
+            remaining_supply INTEGER,
+            gx INTEGER,
+            gy INTEGER,
+            is_renewable INTEGER DEFAULT 0,
+            regrow_rate REAL DEFAULT 0.0
+        )
+    ''')
+
+    # factions: High-level tactical agents.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS factions (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            alignment TEXT,
+            tech_level INTEGER DEFAULT 1,
+            resources_json TEXT
+        )
+    ''')
+
+    # settlements: Geographical hubs for factions.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settlements (
+            id TEXT PRIMARY KEY,
+            faction_id TEXT,
+            name TEXT,
+            level INTEGER DEFAULT 1,
+            gx INTEGER,
+            gy INTEGER,
+            cx INTEGER,
+            cy INTEGER,
+            population INTEGER,
+            happiness INTEGER DEFAULT 50,
+            buildings_json TEXT,
+            FOREIGN KEY(faction_id) REFERENCES factions(id)
+        )
+    ''')
+
+    # --- MIGRATION LAYER ---
+    # Ensure factions table has 'resources_json' if it already existed
+    try:
+        cursor.execute("ALTER TABLE factions ADD COLUMN resources_json TEXT")
+    except sqlite3.OperationalError:
+        pass # Column already exists
+    
     conn.commit()
     conn.close()
 
-def save_map_state(map_id: str, state_dict: dict):
-    """Saves a standalone map state (e.g., a dungeon or interior) to the database."""
+def save_map_state(map_id: str, local_state: Dict[str, Any]):
+    """Persists a tactical map chunk to the SQL database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    data_str = json.dumps(state_dict, cls=PydanticEncoder)
-    
-    cursor.execute('''
-        INSERT INTO saved_maps (map_id, map_data)
-        VALUES (?, ?)
-        ON CONFLICT(map_id) DO UPDATE SET map_data=excluded.map_data
-    ''', (map_id, data_str))
-    
+    data_json = json.dumps(local_state, cls=PydanticEncoder)
+    cursor.execute("INSERT OR REPLACE INTO map_states (map_id, data) VALUES (?, ?)", (map_id, data_json))
     conn.commit()
     conn.close()
 
 def load_map_state(map_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieves a specific map state by its unique ID."""
+    """Retrieves a tactical map chunk from the SQL database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('SELECT map_data FROM saved_maps WHERE map_id=?', (map_id,))
-    result = cursor.fetchone()
+    cursor.execute("SELECT data FROM map_states WHERE map_id = ?", (map_id,))
+    row = cursor.fetchone()
     conn.close()
-    
-    if result:
-        return json.loads(result[0])
+    if row:
+        return json.loads(row[0])
     return None
 
-def save_chunk(chunk_x: int, chunk_y: int, state_data: Dict[str, Any]):
-    """Stores a local map chunk's state indexed by its global grid coordinates."""
+def save_chunk(map_key: str, state_data: Dict[str, Any]):
+    """Stores a local map chunk's state indexed by its unique fractal key."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
@@ -84,20 +153,20 @@ def save_chunk(chunk_x: int, chunk_y: int, state_data: Dict[str, Any]):
     data_str = json.dumps(state_data, cls=PydanticEncoder)
     
     cursor.execute('''
-        INSERT INTO map_chunks (chunk_x, chunk_y, data_json, last_visited_clock)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(chunk_x, chunk_y) 
+        INSERT INTO map_chunks (map_key, data_json, last_visited_clock)
+        VALUES (?, ?, ?)
+        ON CONFLICT(map_key) 
         DO UPDATE SET data_json=excluded.data_json, last_visited_clock=excluded.last_visited_clock
-    ''', (chunk_x, chunk_y, data_str, clock))
+    ''', (map_key, data_str, clock))
     
     conn.commit()
     conn.close()
 
-def load_chunk(chunk_x: int, chunk_y: int) -> Optional[Dict[str, Any]]:
+def load_chunk(map_key: str) -> Optional[Dict[str, Any]]:
     """Loads a previously visited map chunk from the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('SELECT data_json FROM map_chunks WHERE chunk_x=? AND chunk_y=?', (chunk_x, chunk_y))
+    cursor.execute('SELECT data_json FROM map_chunks WHERE map_key=?', (map_key,))
     result = cursor.fetchone()
     conn.close()
     

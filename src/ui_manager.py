@@ -1,10 +1,13 @@
 import pygame
 import textwrap
 from typing import List, Dict, Any, Tuple, Optional
+import entities
+from core.world.time_manager import OstrakaCalendar
 
 # UI_STATE: Tracks transient UI selections (e.g. active tab in character sheet)
 UI_STATE = {
     "active_tab": "Inventory",
+    "active_zoom_level": "Local",
     "context_menu": {"active": False, "item": None, "pos": (0, 0)}
 }
 
@@ -71,8 +74,125 @@ def draw_multi_tab_menu(surface: pygame.Surface, map_data: Dict[str, Any], font:
         clickable_zones.append({"rect": tab_rect, "action": "switch_tab", "target": tab})
 
     # Render Content based on active tab
-    # ... logic for each tab content ...
+    content_rect = pygame.Rect(overlay_rect.left + 20, overlay_rect.top + 60, overlay_rect.width - 40, overlay_rect.height - 80)
     
+    if UI_STATE["active_tab"] == "Status":
+        player = next((e for e in map_data.get("entities", []) if e.type == "player"), None)
+        if player:
+            draw_text(surface, f"NAME: {player.name.upper()}", content_rect.x, content_rect.y, title_font, colors["title"])
+            y = content_rect.y + 50
+            for stat, val in player.stats.model_dump().items():
+                draw_text(surface, f"{stat}: {val}", content_rect.x, y, font, colors["text"])
+                y += 25
+    
+    elif UI_STATE["active_tab"] == "Inventory":
+        player = next((e for e in map_data.get("entities", []) if e.type == "player"), None)
+        if player:
+            draw_text(surface, "INVENTORY", content_rect.x, content_rect.y, title_font, colors["title"])
+            for i, item in enumerate(player.inventory):
+                draw_text(surface, f"- {item}", content_rect.x, content_rect.y + 50 + (i * 25), font, colors["text"])
+
+    elif UI_STATE["active_tab"] == "Map":
+        draw_text(surface, "4-TIER CARTOGRAPHER", content_rect.x, content_rect.y, title_font, colors["title"])
+        
+        # Layer Switcher Sidebar
+        sidebar_rect = pygame.Rect(content_rect.x, content_rect.y + 60, 150, content_rect.height - 100)
+        zoom_levels = ["Global", "Continent", "Region", "Local"]
+        
+        for i, level in enumerate(zoom_levels):
+            level_rect = pygame.Rect(sidebar_rect.x, sidebar_rect.y + (i * 50), 140, 45)
+            is_active = UI_STATE["active_zoom_level"] == level
+            pygame.draw.rect(surface, colors["menu_hover"] if is_active else (25, 30, 35), level_rect)
+            pygame.draw.rect(surface, colors["menu_border"], level_rect, 1)
+            draw_text(surface, level, level_rect.x + 10, level_rect.y + 12, font, (255, 255, 255) if is_active else (150, 150, 150))
+            clickable_zones.append({"rect": level_rect, "action": "switch_zoom", "target": level})
+
+        # Map Display Area
+        map_display_rect = pygame.Rect(content_rect.x + 170, content_rect.y + 60, content_rect.width - 180, content_rect.height - 100)
+        pygame.draw.rect(surface, (15, 18, 20), map_display_rect)
+        pygame.draw.rect(surface, colors["menu_border"], map_display_rect, 2)
+
+        meta = map_data.get("meta", {})
+        raw_coord = meta.get("world_coord", {"gx":5, "gy":5, "cx":50, "cy":50, "rx":50, "ry":50, "lx":50, "ly":50})
+        zoom = UI_STATE["active_zoom_level"]
+
+        if zoom == "Global":
+            # 10x10 God View
+            cell_size = 40
+            for x in range(10):
+                for y in range(10):
+                    rect = pygame.Rect(map_display_rect.centerx + ((x - 5) * cell_size), 
+                                       map_display_rect.centery + ((y - 5) * cell_size), cell_size - 4, cell_size - 4)
+                    color = (40, 45, 50)
+                    if x == raw_coord["gx"] and y == raw_coord["gy"]: color = (0, 180, 255)
+                    pygame.draw.rect(surface, color, rect)
+            draw_text(surface, f"World Seed: {raw_coord['gx']},{raw_coord['gy']}", map_display_rect.x + 10, map_display_rect.y + 10, font, (200, 200, 200))
+
+        elif zoom == "Continent":
+            # 10x10 Window into 100x100 grid
+            cell_size = 30
+            for rx in range(-5, 6):
+                for ry in range(-5, 6):
+                    cx, cy = raw_coord["cx"] + rx, raw_coord["cy"] + ry
+                    if not (0 <= cx < 100 and 0 <= cy < 100): continue
+                    rect = pygame.Rect(map_display_rect.centerx + (rx * cell_size), 
+                                       map_display_rect.centery + (ry * cell_size), cell_size - 3, cell_size - 3)
+                    color = (30, 35, 40)
+                    if rx == 0 and ry == 0: color = (0, 120, 255)
+                    pygame.draw.rect(surface, color, rect)
+            draw_text(surface, f"Continent: {raw_coord['cx']},{raw_coord['cy']}", map_display_rect.x + 10, map_display_rect.y + 10, font, (200, 200, 200))
+
+        elif zoom == "Region":
+            # Neighborhood View
+            cell_size = 25
+            for rx in range(-8, 9):
+                for ry in range(-8, 9):
+                    rect = pygame.Rect(map_display_rect.centerx + (rx * cell_size), 
+                                       map_display_rect.centery + (ry * cell_size), cell_size - 2, cell_size - 2)
+                    color = (25, 30, 35)
+                    if rx == 0 and ry == 0: color = (0, 100, 200)
+                    pygame.draw.rect(surface, color, rect)
+            draw_text(surface, f"Region: {raw_coord['rx']},{raw_coord['ry']}", map_display_rect.x + 10, map_display_rect.y + 10, font, (200, 200, 200))
+
+        elif zoom == "Local":
+            # Render the 100x100 Biome Grid as background
+            grid = map_data.get("biomes", [])
+            if grid:
+                cell_w = map_display_rect.width / 100
+                cell_h = map_display_rect.height / 100
+                
+                # Ostraka Biome Color Matrix
+                b_colors = {
+                    "Chaos Zone / Grind Canyons": (180, 50, 220), # Vibrant Magenta/Purple
+                    "Engineer's Range": (220, 230, 255),          # Frosty White/Blue
+                    "The Sump": (40, 80, 40),                     # Toxic Murky Green
+                    "The Dust Bowl": (180, 160, 110),             # Sandy Beige
+                    "The Verdant Tangle": (20, 120, 20),          # Deep Jungle Green 
+                    "Heartland Plains": (100, 160, 80),           # Bright Grass Green
+                    "Howling Steppes": (140, 140, 120),           # Gritty Grey-Brown
+                    "Shifting Wastes": (100, 100, 100)            # Neutral Grey
+                }
+
+                # Scale it down to pixels
+                for y in range(100):
+                    for x in range(100):
+                        b_entry = grid[y][x]
+                        # Handle both string grid and dict grid (from Clockwork engine)
+                        b_type = b_entry["biome"] if isinstance(b_entry, dict) else b_entry
+                        color = b_colors.get(b_type, (50, 50, 50))
+                        rect = pygame.Rect(map_display_rect.x + x * cell_w, map_display_rect.y + y * cell_h, cell_w + 1, cell_h + 1)
+                        pygame.draw.rect(surface, color, rect)
+
+            draw_text(surface, f"POS: {raw_coord['lx']},{raw_coord['ly']}", map_display_rect.x + 10, map_display_rect.y + 10, font, (255, 255, 255))
+            
+            # Entities
+            for ent in map_data.get("entities", []):
+                ex, ey = ent.pos
+                px = map_display_rect.x + (ex * (map_display_rect.width / 100))
+                py = map_display_rect.y + (ey * (map_display_rect.height / 100))
+                color = (0, 255, 0) if ent.type == "player" else (255, 255, 255)
+                pygame.draw.circle(surface, color, (int(px), int(py)), 3)
+
     return clickable_zones
 
 def draw_hover_tooltip(surface: pygame.Surface, entity: Any, pos: Tuple[int, int], font: pygame.font.Font, colors: Dict[str, Tuple[int, int, int]]):

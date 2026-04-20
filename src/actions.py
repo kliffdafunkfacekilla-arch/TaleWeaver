@@ -1,5 +1,5 @@
 from typing import Dict, List, Any, Optional
-from .entities import Entity
+import entities
 
 # ACTION_REGISTRY: Maps raw semantic actions to B.R.U.T.A.L Engine mechanics.
 # Metadata includes category, valid target types, stamina cost, and primary stats involved.
@@ -30,7 +30,7 @@ ACTION_REGISTRY: Dict[str, Dict[str, Any]] = {
     }
 }
 
-def get_valid_actions(actor: Entity, target: Optional[Entity], learned_skills: List[str] = []) -> List[str]:
+def get_valid_actions(actor: entities.Entity, target: Optional[entities.Entity], learned_skills: List[str] = []) -> List[str]:
     """
     Computes all valid mechanical interactions between an actor and a target.
     

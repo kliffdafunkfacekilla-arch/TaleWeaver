@@ -122,3 +122,8 @@ class MapGenerator:
             "local_map_state": {"entities": [], "biomes": []},
             "meta": {"grid_size": [15, 15]}
         }
+
+def generate_local_map(global_pos: List[int], player_entry_pos: List[int], player_data: Optional[entities.Entity] = None, quest_deck: List[Dict[str, Any]] = []) -> Dict[str, Any]:
+    """Module-level entry point for the engine's transition logic."""
+    bridge = MapGenerator()
+    return bridge.generate_local_map(global_pos, player_entry_pos, player_data, quest_deck)

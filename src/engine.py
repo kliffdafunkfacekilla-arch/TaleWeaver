@@ -211,7 +211,8 @@ def execute_npc_pulse(state: Dict[str, Any], npc: entities.Entity, player: entit
             step_x = 1 if dx > 0 else (-1 if dx < 0 else 0)
             step_y = 1 if dy > 0 else (-1 if dy < 0 else 0)
             dest = [npc.pos[0] + step_x, npc.pos[1] + step_y]
-            collision = any(e.pos == dest and (e.hp > 0 or "solid" in e.tags) for e in state["local_map_state"].get("entities", []))
+            # Only solid props or living hostiles block movement
+            collision = any(e.pos == dest and ("solid" in e.tags or e.type == "hostile") for e in state["local_map_state"].get("entities", []))
             if not collision:
                 npc.pos = dest
                 nx, ny = npc.pos
@@ -444,14 +445,18 @@ def execute_transition(dest_x: int, dest_y: int) -> str:
     
     new_state = db_manager.load_chunk(f"{new_g_x}_{new_g_y}")
     if new_state:
+        # Load existing chunk
         new_state = hydrate_state(new_state)
         if player_data: 
+            # Ensure player isn't already there (prevent double injection)
+            new_state["local_map_state"]["entities"] = [e for e in new_state["local_map_state"]["entities"] if e.type != "player"]
             player_data.pos = [entry_x, entry_y]
             new_state["local_map_state"]["entities"].append(player_data)
         new_state["meta"]["clock"] = state_data["meta"].get("clock", 0)
         check_quest_progress(new_state) 
         save_state(new_state)
     else:
+        # Generate brand new chunk
         deck = state_data.get("meta", {}).get("campaign_tracker", {}).get("active_quest_deck", [])
         map_generator.generate_local_map([new_g_x, new_g_y], [entry_x, entry_y], player_data=player_data, quest_deck=deck)
         new_state = load_state()

@@ -90,8 +90,8 @@ class FractalMapGenerator:
                 chaos = raw_data["chaos"]
                 
                 # --- Multi-Tier Spawning Logic ---
-                ambient_chance = 0.40 if not is_shadow else 0.10
-                fauna_chance = 0.15 if not is_shadow else 0.05
+                ambient_chance = 0.08 if not is_shadow else 0.04
+                fauna_chance = 0.02 if not is_shadow else 0.01
                 
                 if random.random() < ambient_chance:
                     options = EcologyManager.get_spawns(biome_name, "ambient_flora")

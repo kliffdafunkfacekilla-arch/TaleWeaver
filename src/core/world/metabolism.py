@@ -31,9 +31,6 @@ class MetabolismManager:
         tags = entity_data.get("tags", [])
         if "organic" not in tags: return entity_data
         
-        # Metabolism state stored in tags or a dedicated field (if model updated)
-        # For now, we simulate effects via HP and Tags
-        
         biome = atmos.get("biome", "Unknown")
         weather = atmos.get("weather", {}).get("state", "Clear")
         chaos = atmos.get("chaos_modifier", 0.0)
@@ -53,11 +50,14 @@ class MetabolismManager:
         # Apply Consequences
         if is_suffering:
             entity_data["hp"] = max(0, entity_data["hp"] - 1)
-            if entity_data["hp"] <= 0: tags.append("dead")
+            if entity_data["hp"] <= 0: 
+                if "dead" not in tags: tags.append("dead")
         elif is_thriving:
             # Chance to reproduce (spawn copy in high-level loop)
-            if random.random() < 0.05:
-                entity_data["repro_ready"] = True
+            # DISABLED to prevent coyote apocalypse
+            # if random.random() < 0.05:
+            #     entity_data["repro_ready"] = True
+            pass
                 
         return entity_data
 

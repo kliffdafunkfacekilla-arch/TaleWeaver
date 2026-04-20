@@ -51,6 +51,19 @@ class OstrakaGame:
         self.transition_target: Optional[List[int]] = None
         self.map_data: Dict[str, Any] = {"entities": [], "meta": {}}
         
+        # Character Creation transient state
+        self.char_build = {
+            "stage": 0, # 0: Kingdom, 1: SubType, 2: Genetic Variation (Size/Exp), 3: Skill Tracks, 4: Finalize
+            "name": "Jax",
+            "kingdom": "Mammals",
+            "sub_type": "T1",
+            "size_shift": "NONE",
+            "exp": {"Might": 0, "Logic": 0, "Endurance": 0, "Knowledge": 0, "Finesse": 0, "Awareness": 0, "Reflexes": 0, "Intuition": 0, "Vitality": 0, "Charm": 0, "Fortitude": 0, "Willpower": 0},
+            "tracks": [],
+            "points_body": 3,
+            "points_mind": 3
+        }
+        
         self.move_queue: List[Tuple[int, int]] = []
         self.is_animating = False
         self.anim_timer = 0
@@ -61,6 +74,19 @@ class OstrakaGame:
         state = await engine.load_state()
         if "local_map_state" in state:
             md = state["local_map_state"]
+            
+            # NORMALIZATION: Ensure all entities are plain dicts for the UI layer
+            raw_entities = md.get("entities", [])
+            normalized = []
+            for e in raw_entities:
+                if hasattr(e, "model_dump"):
+                    normalized.append(e.model_dump())
+                elif hasattr(e, "__dict__") and not isinstance(e, dict):
+                    normalized.append(dict(e))
+                else:
+                    normalized.append(e)
+            md["entities"] = normalized
+
             md["meta"] = state.get("meta", {})
             md["combat_log"] = state.get("combat_log", [])
             return md
@@ -122,6 +148,8 @@ class OstrakaGame:
             
             if self.app_state == "MAIN_MENU":
                 btns = self.draw_main_menu_ui(mx, my)
+            elif self.app_state == "CHARACTER_CREATOR":
+                creator_btns = self.draw_character_creator_ui(mx, my)
             elif self.app_state == "CHARACTER_SHEET":
                 self.draw_tactical_screen_base(self.map_data, cam_x, cam_y)
                 clickable_zones = ui_manager.draw_multi_tab_menu(self.screen, self.map_data, self.font, self.title_font, self.COLORS, self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
@@ -153,12 +181,49 @@ class OstrakaGame:
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         for btn in btns:
                             if btn["rect"].collidepoint(event.pos):
-                                if btn["action"] == "NEW_GAME": 
-                                    await engine.start_new_game(); self.map_data = await self.load_map_data(); self.app_state = "PLAYING"
+                                if btn["action"] == "CHARACTER_CREATOR": 
+                                    self.app_state = "CHARACTER_CREATOR"
                                 elif btn["action"] == "LOAD_GAME": 
                                     self.map_data = await self.load_map_data(); self.app_state = "PLAYING"
                                 elif btn["action"] == "QUIT": pygame.quit(); sys.exit()
-                
+
+                elif self.app_state == "CHARACTER_CREATOR":
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        # Stage-specific buttons
+                        active = creator_btns
+                        for b in active["kingdoms"]:
+                            if b["rect"].collidepoint(event.pos): self.char_build["kingdom"] = b["val"]
+                        
+                        for b in active["subtypes"]:
+                            if b["rect"].collidepoint(event.pos): self.char_build["sub_type"] = b["val"]
+                        
+                        for b in active["variation"]:
+                            if b["rect"].collidepoint(event.pos):
+                                if b["action"] == "set_size": self.char_build["size_shift"] = b["val"]
+                                elif b["action"] == "add_exp":
+                                    p_key = b["p_key"]
+                                    if self.char_build[p_key] > 0:
+                                        self.char_build["exp"][b["val"]] += 1
+                                        self.char_build[p_key] -= 1
+                        
+                        for b in active["tracks"]:
+                            if b["rect"].collidepoint(event.pos):
+                                t = b["val"]
+                                if t in self.char_build["tracks"]: self.char_build["tracks"].remove(t)
+                                elif len(self.char_build["tracks"]) < 6: self.char_build["tracks"].append(t)
+                        
+                        for b in active["nav"]:
+                            if b["rect"].collidepoint(event.pos):
+                                if b["action"] == "next_stage":
+                                    if self.char_build["stage"] < 4: self.char_build["stage"] += 1
+                                    else:
+                                        # Finalize and start
+                                        await engine.start_new_game(self.char_build)
+                                        self.map_data = await self.load_map_data()
+                                        self.app_state = "PLAYING"
+                                elif b["action"] == "prev_stage":
+                                    self.char_build["stage"] = max(0, self.char_build["stage"] - 1)
+
                 elif self.app_state == "CHARACTER_SHEET":
                     if event.type == pygame.KEYDOWN and event.key in [pygame.K_c, pygame.K_ESCAPE]: self.app_state = "PLAYING"
                     elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -239,12 +304,127 @@ class OstrakaGame:
         title_surf = self.title_font.render("SHATTERLANDS", True, self.COLORS["title"])
         self.screen.blit(title_surf, title_surf.get_rect(center=(self.WINDOW_WIDTH // 2, self.WINDOW_HEIGHT // 4)))
         bx = (self.WINDOW_WIDTH // 2) - 100
-        btns = [{"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2, 200, 50), "text": "New Game", "action": "NEW_GAME"}, {"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2 + 70, 200, 50), "text": "Continue", "action": "LOAD_GAME"}, {"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2 + 140, 200, 50), "text": "Quit", "action": "QUIT"}]
+        btns = [{"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2, 200, 50), "text": "New Game", "action": "CHARACTER_CREATOR"}, {"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2 + 70, 200, 50), "text": "Continue", "action": "LOAD_GAME"}, {"rect": pygame.Rect(bx, self.WINDOW_HEIGHT // 2 + 140, 200, 50), "text": "Quit", "action": "QUIT"}]
         for btn in btns:
             pygame.draw.rect(self.screen, self.COLORS["menu_hover"] if btn["rect"].collidepoint(mx, my) else self.COLORS["menu_bg"], btn["rect"])
             pygame.draw.rect(self.screen, self.COLORS["menu_border"], btn["rect"], 2)
             text_surf = self.font.render(btn["text"], True, self.COLORS["text"])
             self.screen.blit(text_surf, text_surf.get_rect(center=btn["rect"].center))
+        return btns
+
+    def draw_character_creator_ui(self, mx, my):
+        self.screen.fill(self.COLORS["bg"])
+        draw_text = ui_manager.draw_text
+        stage = self.char_build["stage"]
+        
+        stages = ["Kingdom", "Sub-Type", "Variation", "Training", "Finalize"]
+        header_text = f"CHARACTER SYNTHESIS - {stages[stage].upper()}"
+        draw_text(self.screen, header_text, 50, 50, self.title_font, self.COLORS["title"])
+        
+        btns = {"kingdoms": [], "subtypes": [], "variation": [], "tracks": [], "nav": []}
+        
+        if stage == 0: # Kingdom
+            draw_text(self.screen, "1. SELECT BIOLOGICAL KINGDOM", 50, 120, self.font, self.COLORS["warning"])
+            kingdoms = ["Mammals", "Avians", "Reptiles & Amphibians", "Aquatics", "Insects & Arthropods", "Plants & Myconids"]
+            for i, k in enumerate(kingdoms):
+                row, col = i // 3, i % 3
+                rect = pygame.Rect(50 + (col * 240), 150 + (row * 35), 230, 30)
+                is_sel = self.char_build["kingdom"] == k
+                pygame.draw.rect(self.screen, self.COLORS["menu_hover"] if is_sel or rect.collidepoint(mx, my) else self.COLORS["menu_bg"], rect)
+                pygame.draw.rect(self.screen, self.COLORS["menu_border"], rect, 1)
+                draw_text(self.screen, k, rect.x + 10, rect.y + 5, self.font, (255, 255, 255) if is_sel else (150, 150, 150))
+                btns["kingdoms"].append({"rect": rect, "action": "set_kingdom", "val": k})
+        
+        elif stage == 1: # Sub-Type
+            draw_text(self.screen, f"2. SELECT {self.char_build['kingdom'].upper()} SUB-TYPE", 50, 120, self.font, self.COLORS["warning"])
+            subtypes = [
+                ("T1", "The Balancer: Rounded arrays."),
+                ("T2", "The Heavy: Might & Durability."),
+                ("T3", "The Predator: Reflexes & Speed."),
+                ("T4", "The Specialist: Technical/Mental Processing.")
+            ]
+            for i, (st, desc) in enumerate(subtypes):
+                rect = pygame.Rect(50, 160 + (i * 60), 600, 50)
+                is_sel = self.char_build["sub_type"] == st
+                pygame.draw.rect(self.screen, self.COLORS["menu_hover"] if is_sel or rect.collidepoint(mx, my) else self.COLORS["menu_bg"], rect)
+                pygame.draw.rect(self.screen, self.COLORS["menu_border"], rect, 1)
+                draw_text(self.screen, st, rect.x + 10, rect.y + 15, self.title_font, (255, 255, 255) if is_sel else (150, 150, 150))
+                draw_text(self.screen, desc, rect.x + 80, rect.y + 18, self.font, (200, 200, 200))
+                btns["subtypes"].append({"rect": rect, "action": "set_subtype", "val": st})
+
+        elif stage == 2: # Genetic Variation
+            draw_text(self.screen, "3. GENETIC VARIATION & LIFE EXPERIENCE", 50, 120, self.font, self.COLORS["warning"])
+            
+            # Size Shift
+            draw_text(self.screen, f"SIZE SHIFT: {self.char_build['size_shift']}", 50, 155, self.font, self.COLORS["title"])
+            for i, opt in enumerate(["DOWN", "NONE", "UP"]):
+                rect = pygame.Rect(50 + (i * 100), 180, 80, 30)
+                is_sel = self.char_build["size_shift"] == opt
+                pygame.draw.rect(self.screen, self.COLORS["menu_hover"] if is_sel or rect.collidepoint(mx, my) else self.COLORS["menu_bg"], rect)
+                pygame.draw.rect(self.screen, self.COLORS["menu_border"], rect, 1)
+                draw_text(self.screen, opt, rect.x + 10, rect.y + 5, self.font, (255, 255, 255) if is_sel else (150, 150, 150))
+                btns["variation"].append({"rect": rect, "action": "set_size", "val": opt})
+
+            # Stats (3B / 3M)
+            from modules.character_engine import BODY_STATS, MIND_STATS
+            draw_text(self.screen, f"LIFE EXPERIENCE (Body: {self.char_build['points_body']}, Mind: {self.char_build['points_mind']})", 400, 155, self.font, self.COLORS["warning"])
+            
+            def draw_stat_row(group, gx, gy, p_key):
+                for i, s in enumerate(group):
+                    rect = pygame.Rect(gx, gy + (i * 30), 180, 25)
+                    val = self.char_build["exp"][s]
+                    draw_text(self.screen, f"{s}: {val}", rect.x, rect.y, self.font, self.COLORS["text"])
+                    plus_rect = pygame.Rect(rect.right - 25, rect.y, 25, 25)
+                    pygame.draw.rect(self.screen, self.COLORS["menu_bg"], plus_rect); pygame.draw.rect(self.screen, self.COLORS["menu_border"], plus_rect, 1)
+                    draw_text(self.screen, "+", plus_rect.x + 7, plus_rect.y + 2, self.font, (255, 255, 255))
+                    btns["variation"].append({"rect": plus_rect, "action": "add_exp", "val": s, "p_key": p_key})
+
+            draw_stat_row(BODY_STATS, 400, 180, "points_body")
+            draw_stat_row(MIND_STATS, 620, 180, "points_mind")
+
+        elif stage == 3: # Professional Training
+            draw_text(self.screen, f"4. PROFESSIONAL TRAINING (Locked: {len(self.char_build['tracks'])}/6)", 50, 110, self.font, self.COLORS["warning"])
+            track_mapping = engine.load_json_data(engine.TRACK_MAPPING_FILE)
+            all_tracks = list(track_mapping.keys())[:24]
+            for i, t in enumerate(all_tracks):
+                row, col = i // 3, i % 3
+                rect = pygame.Rect(50 + (col * 240), 140 + (row * 35), 230, 30)
+                is_sel = t in self.char_build["tracks"]
+                pygame.draw.rect(self.screen, (0, 100, 200) if is_sel else (self.COLORS["menu_hover"] if rect.collidepoint(mx, my) else self.COLORS["menu_bg"]), rect)
+                pygame.draw.rect(self.screen, self.COLORS["menu_border"], rect, 1)
+                draw_text(self.screen, t, rect.x + 10, rect.y + 5, self.font, (255, 255, 255) if is_sel else (150, 150, 150))
+                btns["tracks"].append({"rect": rect, "action": "toggle_track", "val": t})
+
+        elif stage == 4: # Final Preview
+            draw_text(self.screen, "5. FINAL CHASSIS PREVIEW", 50, 120, self.font, self.COLORS["warning"])
+            # Temporary "Simulated" Preview (Real math happens in engine upon start)
+            draw_text(self.screen, f"KINGDOM: {self.char_build['kingdom']} ({self.char_build['sub_type']})", 50, 160, self.title_font, self.COLORS["title"])
+            draw_text(self.screen, f"SIZE: {self.char_build['size_shift']}", 50, 200, self.font, self.COLORS["text"])
+            draw_text(self.screen, "TRACKS:", 50, 230, self.font, self.COLORS["warning"])
+            for i, t in enumerate(self.char_build["tracks"]):
+                draw_text(self.screen, f"- {t}", 70, 255 + (i * 25), self.font, self.COLORS["text"])
+            
+            draw_text(self.screen, "Stat baselines and Hard Cap (8) will be enforced upon entry.", 400, 230, self.font, (100,255,100))
+            draw_text(self.screen, "ALL CHOICES ARE FINAL FOR SESSION ZERO.", 400, 260, self.font, self.COLORS["danger"])
+
+        # Navigation
+        if stage > 0:
+            prev_rect = pygame.Rect(50, 520, 100, 40)
+            pygame.draw.rect(self.screen, self.COLORS["menu_bg"], prev_rect); pygame.draw.rect(self.screen, self.COLORS["menu_border"], prev_rect, 1)
+            draw_text(self.screen, "< PREV", prev_rect.x + 15, prev_rect.y + 10, self.font, (255,255,255))
+            btns["nav"].append({"rect": prev_rect, "action": "prev_stage"})
+            
+        next_text = "INITIALIZE CHASSIS" if stage == 4 else "NEXT >"
+        next_rect = pygame.Rect(650, 520, 180, 40)
+        can_next = True
+        if stage == 2: can_next = (self.char_build["points_body"] == 0 and self.char_build["points_mind"] == 0)
+        elif stage == 3: can_next = (len(self.char_build["tracks"]) == 6)
+        
+        pygame.draw.rect(self.screen, (0, 150, 0) if can_next else (50, 50, 50), next_rect)
+        pygame.draw.rect(self.screen, self.COLORS["menu_border"], next_rect, 1)
+        draw_text(self.screen, next_text, next_rect.x + 15, next_rect.y + 10, self.font, (255,255,255))
+        if can_next: btns["nav"].append({"rect": next_rect, "action": "next_stage"})
+        
         return btns
 
     def draw_tactical_screen_base(self, map_data: Dict[str, Any], cam_x: int, cam_y: int):

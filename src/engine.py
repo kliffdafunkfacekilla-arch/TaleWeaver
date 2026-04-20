@@ -52,14 +52,61 @@ async def log_message(msg: str):
     save_state(state)
     print(f"[Log] {msg}")
 
-async def start_new_game() -> Dict[str, Any]:
+async def start_new_game(char_build: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Performs directory initialization, database reset, and world generation.
     Sets up the initial campaign tracker and the hidden Master Arc.
+    Integrates the Character Synthesis engine if build data is provided.
     """
     db_manager.reset_world()
+    
+    # Process Character Synthesis if available
+    player_data = None
+    if char_build:
+        from modules.character_engine import CharacterEngine
+        from core.schemas import CharacterBuildRequest
+        
+        # Mapping frontend build to request model
+        req = CharacterBuildRequest(
+            name=char_build.get("name", "Jax"),
+            kingdom=char_build.get("kingdom", "Mammals"),
+            sub_type=char_build.get("sub_type", "T1"),
+            size_shift=char_build.get("size_shift", "NONE"),
+            life_experience={k: v for k, v in char_build.get("exp", {}).items() if v > 0},
+            selected_tracks=char_build.get("tracks", ["Check 1", "Check 2", "Check 3", "Check 4", "Check 5", "Check 6"])
+        )
+        # Ensure 6 points are distributed for validation (if UI was skipped or errored)
+        exp_sum_body = sum(req.life_experience.get(s, 0) for s in ["Might", "Endurance", "Finesse", "Reflexes", "Vitality", "Fortitude"])
+        exp_sum_mind = sum(req.life_experience.get(s, 0) for s in ["Knowledge", "Logic", "Awareness", "Intuition", "Charm", "Willpower"])
+        
+        if exp_sum_body < 3: req.life_experience["Might"] = req.life_experience.get("Might", 0) + (3 - exp_sum_body)
+        if exp_sum_mind < 3: req.life_experience["Knowledge"] = req.life_experience.get("Knowledge", 0) + (3 - exp_sum_mind)
+            
+        engine_v = CharacterEngine()
+        sheet = engine_v.generate_character(req)
+        
+        # Convert sheet to Entity
+        player_data = entities.Entity(
+            id="player_0",
+            name=sheet.name,
+            type="player",
+            pos=[50, 50],
+            hp=sheet.pools.hp.max,
+            max_hp=sheet.pools.hp.max,
+            composure=sheet.pools.composure.max,
+            max_composure=sheet.pools.composure.max,
+            stats=entities.EntityStats(**sheet.stats.model_dump()),
+            resources=entities.EntityResources(
+                stamina=sheet.pools.stamina.max,
+                max_stamina=sheet.pools.stamina.max,
+                focus=sheet.pools.focus.max,
+                max_focus=sheet.pools.focus.max
+            ),
+            tags=["player", "flesh", sheet.kingdom.lower()]
+        )
+
     # Initialize at the center of a 100x100 grid
-    map_generator.MapGenerator(width=100, height=100).generate_local_map([0,0], [50,50])
+    map_generator.MapGenerator(width=100, height=100).generate_local_map([0,0], [50,50], player_data=player_data)
     
     state = {}
     state_path = "state/local_map_state.json"

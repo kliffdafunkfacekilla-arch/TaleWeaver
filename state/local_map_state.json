@@ -7,8 +7,8 @@
         "name": "Captain Jax",
         "type": "player",
         "pos": [
-          50,
-          50
+          61,
+          51
         ],
         "hp": 20,
         "max_hp": 20,
@@ -161568,6 +161568,13 @@
     }
   },
   "combat_log": [
-    "Director: Welcome to Shatterlands."
-  ]
+    "Director: Welcome to Shatterlands.",
+    "👁️ Prop Wind Mill: HP 20, Tags: [prop, fixed, interactable]"
+  ],
+  "latest_action": {
+    "actor": "Captain Jax",
+    "action": "Move",
+    "target": "61,51",
+    "mechanical_result": "Moved."
+  }
 }

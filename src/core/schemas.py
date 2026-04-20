@@ -12,18 +12,18 @@ class CoreStats(GettableModel):
     Primary quantitative attributes in the B.R.U.T.A.L. TTRPG system.
     Values during character creation are typically 1-8.
     """
-    Might: int = 0
-    Logic: int = 0
-    Endurance: int = 0
-    Knowledge: int = 0
-    Finesse: int = 0
-    Awareness: int = 0
-    Reflexes: int = 0
-    Intuition: int = 0
-    Vitality: int = 0
-    Charm: int = 0
-    Fortitude: int = 0
-    Willpower: int = 0
+    Might: int = 10
+    Logic: int = 10
+    Endurance: int = 10
+    Knowledge: int = 10
+    Finesse: int = 10
+    Awareness: int = 10
+    Reflexes: int = 10
+    Intuition: int = 10
+    Vitality: int = 10
+    Charm: int = 10
+    Fortitude: int = 10
+    Willpower: int = 10
 
 class ResourcePool(GettableModel):
     """
@@ -57,24 +57,29 @@ class GameTags(str, Enum):
 class CharacterBuildRequest(GettableModel):
     """
     The payload used to initialize a new character chassis.
+    Strictly enforces B.R.U.T.A.L. Session Zero rules.
     """
-    name: str = "New Character"
+    name: str = "Jax"
     kingdom: str 
-    sub_type: str 
-    size_shift: str = "NONE" 
-    life_experience: Dict[str, int] = {} 
-    selected_tracks: List[str] = [] 
+    sub_type: str = "T1" # T1-T4
+    size_shift: str = "NONE" # UP, DOWN, NONE
+    life_experience: Dict[str, int] = {} # 3 Body / 3 Mind
+    selected_tracks: List[str] = [] # Exactly 6
 
     @validator('life_experience')
     def validate_exp(cls, v):
-        if sum(v.values()) != 6:
-            raise ValueError("Life Experience must distribute exactly 6 points.")
+        from modules.character_engine import BODY_STATS, MIND_STATS
+        body_sum = sum(v.get(s, 0) for s in BODY_STATS)
+        mind_sum = sum(v.get(s, 0) for s in MIND_STATS)
+        
+        if body_sum != 3 or mind_sum != 3:
+            raise ValueError(f"Life Experience must be exactly 3 Body points and 3 Mind points. (Got {body_sum} Body, {mind_sum} Mind)")
         return v
 
     @validator('selected_tracks')
     def validate_tracks(cls, v):
         if len(v) != 6:
-            raise ValueError("Exactly 6 tracks must be selected.")
+            raise ValueError("Exactly 6 tracks must be selected for Professional Training.")
         return v
 
 class DerivedStats(GettableModel):

@@ -57,18 +57,18 @@ class Equipment(GettableModel):
 
 class EntityStats(GettableModel):
     """Primary quantitative attributes of an entity."""
-    Awareness: int = 0
-    Logic: int = 0
-    Vitality: int = 0
-    Knowledge: int = 0
-    Charm: int = 0
-    Finesse: int = 0
-    Reflexes: int = 0
-    Might: int = 0
-    Intuition: int = 0
-    Endurance: int = 0
-    Fortitude: int = 0
-    Willpower: int = 0
+    Awareness: int = 10
+    Logic: int = 10
+    Vitality: int = 10
+    Knowledge: int = 10
+    Charm: int = 10
+    Finesse: int = 10
+    Reflexes: int = 10
+    Might: int = 10
+    Intuition: int = 10
+    Endurance: int = 10
+    Fortitude: int = 10
+    Willpower: int = 10
 
 class Tracks(GettableModel):
     """Primary stat tracks for combat resolution."""

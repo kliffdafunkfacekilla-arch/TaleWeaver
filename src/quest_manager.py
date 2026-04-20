@@ -21,9 +21,20 @@ async def generate_story_glue(seed_event: str, state: Dict[str, Any]) -> Dict[st
         Dict[str, Any]: A JSON object with 'story_hook', 'involved_factions', and 'dominant_theme'.
     """
     tracker = state.get("meta", {}).get("campaign_tracker", {})
+    master_arc = tracker.get("master_arc")
     past_history = tracker.get("quest_history", [])
     active_subplot = tracker.get("active_subplot", "None")
     main_plot = tracker.get("main_plot", "Hunting the bandits who burned your village.")
+
+    arc_context = ""
+    if master_arc:
+        arc_context = f"""
+        HIDDEN MASTER ARC (The 'Iceberg'):
+        - Antagonist Faction: {master_arc.get('antagonist_faction')}
+        - Secret Objective: {master_arc.get('target_objective')}
+        - Key Narrative Nouns: {', '.join(master_arc.get('key_nouns', []))}
+        - Current Intensity (Act): {master_arc.get('current_act', 1)}/5
+        """
 
     prompt = f"""
     You are the Narrative Weaver for a gritty dark fantasy RPG set in Ostraka.
@@ -31,8 +42,12 @@ async def generate_story_glue(seed_event: str, state: Dict[str, Any]) -> Dict[st
     PAST HISTORY: {past_history}
     CURRENT SUB-PLOT: {active_subplot}
     MACRO CAMPAIGN: {main_plot}
+    {arc_context}
     
-    Write a 2-to-3 sentence story hook that creatively connects the CURRENT EVENT SEED to the player's PAST HISTORY or SUB-PLOT.
+    Write a 2-to-3 sentence story hook. 
+    REQUIRMENT: Creatively connect the CURRENT EVENT SEED to the player's history or sub-plot.
+    ICEBERG RULE: If the HIDDEN MASTER ARC is provided, subtly plant a "seed" or reference to its Key Nouns or Secret Objective within the description. DO NOT reveal the whole plot, just a shadow of it.
+
     Respond ONLY in valid JSON format with exactly three keys:
     - "story_hook": (string) The gritty narrative description.
     - "involved_factions": (array of strings) Guess 1 or 2 factions from: "sump_kin", "iron_caldera", "wild_beasts", "river_folk", "imperial_remnant".

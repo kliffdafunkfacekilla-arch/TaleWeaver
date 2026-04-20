@@ -5,7 +5,12 @@ import json
 import os
 from typing import Tuple
 
-class WorldCoord(BaseModel):
+class GettableModel(BaseModel):
+    """Base model that provides .get() for dictionary-style compatibility."""
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
+class WorldCoord(GettableModel):
     """
     Precision Coordinate System for the Ostraka Fractal Engine.
     Scales from 10x10 Global down to 100x100 Local.
@@ -30,13 +35,13 @@ class WorldCoord(BaseModel):
 ITEM_CACHE: Optional[Dict[str, Any]] = None
 SKILL_CACHE: Optional[Dict[str, Any]] = None
 
-class Beats(BaseModel):
+class Beats(GettableModel):
     """Action tokens refreshed every turn."""
     move: int = 0
     stamina: int = 0
     focus: int = 0
 
-class ResourcePool(BaseModel):
+class ResourcePool(GettableModel):
     """Transient pools for health, energy, and action beats."""
     stamina: int = 0
     max_stamina: int = 10
@@ -44,13 +49,13 @@ class ResourcePool(BaseModel):
     max_focus: int = 10
     beats: Beats = Field(default_factory=Beats)
 
-class Equipment(BaseModel):
+class Equipment(GettableModel):
     """Categorized items currently wielded or worn."""
     weapon: Optional[str] = "None"
     armor: Optional[str] = "None"
     accessory: Optional[str] = "None"
 
-class EntityStats(BaseModel):
+class EntityStats(GettableModel):
     """Primary quantitative attributes of an entity."""
     Awareness: int = 0
     Logic: int = 0
@@ -65,12 +70,12 @@ class EntityStats(BaseModel):
     Fortitude: int = 0
     Willpower: int = 0
 
-class Tracks(BaseModel):
+class Tracks(GettableModel):
     """Primary stat tracks for combat resolution."""
     offense: str = "Might"
     defense: str = "Reflexes"
 
-class Entity(BaseModel):
+class Entity(GettableModel):
     """
     The core data model for all actors and props in Ostraka.
     Strictly enforced via Pydantic for type safety and nested validation.

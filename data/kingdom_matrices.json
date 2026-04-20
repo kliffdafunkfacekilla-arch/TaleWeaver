@@ -1,0 +1,38 @@
+{
+  "Mammals": {
+    "T1": {"Might": 3, "Endurance": 3, "Finesse": 4, "Reflexes": 3, "Vitality": 3, "Fortitude": 2, "Knowledge": 4, "Logic": 2, "Awareness": 3, "Intuition": 3, "Charm": 3, "Willpower": 3},
+    "T2": {"Might": 4, "Endurance": 4, "Finesse": 4, "Reflexes": 2, "Vitality": 2, "Fortitude": 2, "Knowledge": 4, "Logic": 2, "Awareness": 2, "Intuition": 2, "Charm": 4, "Willpower": 4},
+    "T3": {"Might": 4, "Endurance": 5, "Finesse": 5, "Reflexes": 1, "Vitality": 2, "Fortitude": 1, "Knowledge": 5, "Logic": 1, "Awareness": 1, "Intuition": 2, "Charm": 5, "Willpower": 4},
+    "T4": {"Might": 2, "Endurance": 4, "Finesse": 5, "Reflexes": 4, "Vitality": 2, "Fortitude": 1, "Knowledge": 5, "Logic": 1, "Awareness": 4, "Intuition": 2, "Charm": 4, "Willpower": 2}
+  },
+  "Reptiles & Amphibians": {
+    "T1": {"Might": 3, "Endurance": 3, "Finesse": 2, "Reflexes": 3, "Vitality": 3, "Fortitude": 4, "Knowledge": 3, "Logic": 4, "Awareness": 2, "Intuition": 3, "Charm": 3, "Willpower": 3},
+    "T2": {"Might": 4, "Endurance": 2, "Finesse": 2, "Reflexes": 4, "Vitality": 2, "Fortitude": 4, "Knowledge": 2, "Logic": 4, "Awareness": 2, "Intuition": 4, "Charm": 4, "Willpower": 2},
+    "T3": {"Might": 4, "Endurance": 1, "Finesse": 1, "Reflexes": 5, "Vitality": 2, "Fortitude": 5, "Knowledge": 2, "Logic": 5, "Awareness": 1, "Intuition": 5, "Charm": 4, "Willpower": 1},
+    "T4": {"Might": 2, "Endurance": 4, "Finesse": 1, "Reflexes": 4, "Vitality": 2, "Fortitude": 5, "Knowledge": 2, "Logic": 5, "Awareness": 1, "Intuition": 4, "Charm": 2, "Willpower": 4}
+  },
+  "Avians": {
+    "T1": {"Might": 2, "Endurance": 3, "Finesse": 3, "Reflexes": 4, "Vitality": 3, "Fortitude": 3, "Knowledge": 3, "Logic": 3, "Awareness": 4, "Intuition": 2, "Charm": 3, "Willpower": 3},
+    "T2": {"Might": 2, "Endurance": 4, "Finesse": 2, "Reflexes": 4, "Vitality": 4, "Fortitude": 2, "Knowledge": 4, "Logic": 2, "Awareness": 4, "Intuition": 2, "Charm": 4, "Willpower": 2},
+    "T3": {"Might": 1, "Endurance": 2, "Finesse": 4, "Reflexes": 5, "Vitality": 5, "Fortitude": 1, "Knowledge": 5, "Logic": 1, "Awareness": 5, "Intuition": 1, "Charm": 2, "Willpower": 4},
+    "T4": {"Might": 1, "Endurance": 2, "Finesse": 2, "Reflexes": 5, "Vitality": 4, "Fortitude": 4, "Knowledge": 4, "Logic": 4, "Awareness": 5, "Intuition": 1, "Charm": 2, "Willpower": 2}
+  },
+  "Aquatics": {
+    "T1": {"Might": 3, "Endurance": 4, "Finesse": 3, "Reflexes": 3, "Vitality": 2, "Fortitude": 3, "Knowledge": 3, "Logic": 3, "Awareness": 3, "Intuition": 3, "Charm": 2, "Willpower": 4},
+    "T2": {"Might": 2, "Endurance": 4, "Finesse": 4, "Reflexes": 2, "Vitality": 2, "Fortitude": 4, "Knowledge": 2, "Logic": 4, "Awareness": 4, "Intuition": 2, "Charm": 2, "Willpower": 4},
+    "T3": {"Might": 1, "Endurance": 5, "Finesse": 5, "Reflexes": 4, "Vitality": 1, "Fortitude": 2, "Knowledge": 1, "Logic": 2, "Awareness": 5, "Intuition": 4, "Charm": 1, "Willpower": 5},
+    "T4": {"Might": 4, "Endurance": 5, "Finesse": 4, "Reflexes": 2, "Vitality": 1, "Fortitude": 2, "Knowledge": 4, "Logic": 2, "Awareness": 4, "Intuition": 2, "Charm": 1, "Willpower": 5}
+  },
+  "Insects & Arthropods": {
+    "T1": {"Might": 4, "Endurance": 2, "Finesse": 3, "Reflexes": 3, "Vitality": 3, "Fortitude": 3, "Knowledge": 3, "Logic": 3, "Awareness": 3, "Intuition": 4, "Charm": 3, "Willpower": 2},
+    "T2": {"Might": 4, "Endurance": 2, "Finesse": 4, "Reflexes": 2, "Vitality": 2, "Fortitude": 4, "Knowledge": 2, "Logic": 4, "Awareness": 4, "Intuition": 4, "Charm": 2, "Willpower": 2},
+    "T3": {"Might": 5, "Endurance": 1, "Finesse": 2, "Reflexes": 4, "Vitality": 1, "Fortitude": 5, "Knowledge": 2, "Logic": 5, "Awareness": 4, "Intuition": 5, "Charm": 1, "Willpower": 1},
+    "T4": {"Might": 5, "Endurance": 1, "Finesse": 2, "Reflexes": 2, "Vitality": 4, "Fortitude": 4, "Knowledge": 2, "Logic": 4, "Awareness": 2, "Intuition": 5, "Charm": 4, "Willpower": 1}
+  },
+  "Plants & Myconids": {
+    "T1": {"Might": 3, "Endurance": 3, "Finesse": 3, "Reflexes": 2, "Vitality": 4, "Fortitude": 3, "Knowledge": 2, "Logic": 3, "Awareness": 3, "Intuition": 3, "Charm": 4, "Willpower": 3},
+    "T2": {"Might": 4, "Endurance": 4, "Finesse": 2, "Reflexes": 2, "Vitality": 4, "Fortitude": 2, "Knowledge": 2, "Logic": 2, "Awareness": 4, "Intuition": 2, "Charm": 4, "Willpower": 4},
+    "T3": {"Might": 5, "Endurance": 2, "Finesse": 1, "Reflexes": 1, "Vitality": 5, "Fortitude": 4, "Knowledge": 1, "Logic": 2, "Awareness": 4, "Intuition": 1, "Charm": 5, "Willpower": 5},
+    "T4": {"Might": 4, "Endurance": 2, "Finesse": 4, "Reflexes": 1, "Vitality": 5, "Fortitude": 2, "Knowledge": 1, "Logic": 2, "Awareness": 2, "Intuition": 4, "Charm": 5, "Willpower": 4}
+  }
+}

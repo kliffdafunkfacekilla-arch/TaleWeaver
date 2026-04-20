@@ -12,7 +12,29 @@ class MapGenerator:
     """
     Bridge between the Clockwork Fractal Engine and the Ostraka Engine.
     Handles high-resolution 100x100 map generation with deterministic seeding.
+    Supports local fractal terrain AND tactical ship boarding actions.
     """
+    DEFAULT_SHIP_LAYOUTS = {
+        "Light Skiff": [
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_helm", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_cannons", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_quarters", "ship_deck", "ship_hull"],
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+        ],
+        "Heavy Galleon": [
+            ["ship_hull"] * 9,
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_helm", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+            ["ship_hull"] + ["ship_deck"] * 7 + ["ship_hull"],
+            ["ship_hull", "ship_deck", "ship_cannons", "ship_deck", "ship_deck", "ship_deck", "ship_cannons", "ship_deck", "ship_hull"],
+            ["ship_hull"] + ["ship_deck"] * 7 + ["ship_hull"],
+            ["ship_hull", "ship_deck", "ship_deck", "ship_deck", "ship_quarters", "ship_deck", "ship_deck", "ship_deck", "ship_hull"],
+            ["ship_hull"] * 9,
+        ]
+    }
+
     def __init__(self, width: int = 100, height: int = 100):
         """Initializes the tactical grid dimensions (Locked at 100x100)."""
         self.width = width
@@ -114,6 +136,51 @@ class MapGenerator:
             json.dump(json_compatible, f, indent=2)
             
         return json_compatible
+
+    def generate_boarding_map(self, ship_a: Dict[str, Any], ship_b: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Creates a tactical battlemap where ship A is boarding ship B.
+        Ships are placed side-by-side in the center of the 100x100 grid.
+        """
+        # Create empty sky/aether grid
+        grid = [[{"biome": "The Void / Aether Sky", "data": {"elev": 0, "moist": 0, "chaos": 0.5}} for _ in range(self.width)] for _ in range(self.height)]
+        
+        # Helper to inject ship layout
+        def inject_ship(layout_name: str, start_x: int, start_y: int):
+            layout = self.DEFAULT_SHIP_LAYOUTS.get(layout_name, self.DEFAULT_SHIP_LAYOUTS["Light Skiff"])
+            for dy, row in enumerate(layout):
+                for dx, cell in enumerate(row):
+                    if start_y + dy < self.height and start_x + dx < self.width:
+                        grid[start_y + dy][start_x + dx] = {
+                            "biome": f"Ship Interior ({cell.replace('ship_', '').title()})",
+                            "data": {"elev": 1.0, "moist": 0.0, "chaos": 0.1, "is_ship": True}
+                        }
+
+        # Place Ship A (Left)
+        inject_ship(ship_a.get("class", "Light Skiff"), 40, 45)
+        # Place Ship B (Right) - Locked together
+        inject_ship(ship_b.get("class", "Light Skiff"), 46, 45)
+
+        local_state = {
+            "local_map_state": {
+                "environment": f"EMERGENCY: {ship_a['name']} has docked with {ship_b['name']} for boarding!",
+                "entities": [], # In practice, loop through ship crews and inject entities here
+                "biomes": grid
+            },
+            "meta": {
+                "global_pos": [0, 0],
+                "grid_size": [self.width, self.height],
+                "region_id": "naval_boarding_sector",
+                "current_map_id": f"boarding_{ship_a['ship_id']}_{ship_b['ship_id']}"
+            }
+        }
+        
+        # Save state for loading
+        state_path = "state/local_map_state.json"
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(local_state, f, indent=2)
+            
+        return local_state
 
     def generate_interior_room(self, room_definition: Dict[str, Any]) -> Dict[str, Any]:
         """Interior rooms remain 15x15 for tactical focus."""

@@ -23,12 +23,6 @@ class CampaignDirector:
         """
         Determines if a global narrative event (e.g. Faction War, Plague) 
         should trigger based on player actions and world state.
-        
-        Args:
-            player_stats: Summary of player accomplishments/notoriety.
-            
-        Returns:
-            Optional[str]: Description of the triggered event or None.
         """
         # ... logic for global event triggers ...
         return None
@@ -36,12 +30,6 @@ class CampaignDirector:
     async def generate_faction_rumor(self, faction: str) -> str:
         """
         Generates a localized rumor about a specific faction using AI.
-        
-        Args:
-            faction: Name of the faction (e.g. 'sump_kin').
-            
-        Returns:
-            str: A short narrative rumor string.
         """
         prompt = f"""
         You are a shifty informant in the back-alleys of Ostraka.
@@ -93,26 +81,16 @@ class CampaignDirector:
     def evaluate_spawns(self, global_pos: List[int], quest_deck: List[Dict[str, Any]], chaos_level: int = 5) -> List[Dict[str, Any]]:
         """
         Determines which NPCs/Objects should spawn on a local map based on narrative context.
-        
-        Args:
-            global_pos: The [x,y] world coordinates.
-            quest_deck: The active sequence of quest nodes.
-            chaos_level: The local instability (0-20).
-            
-        Returns:
-            List[Dict[str, Any]]: A list of entity definitions to spawn.
         """
         spawns = []
         
         # 1. Quest Spawns (Highest Priority)
         if quest_deck:
             current_node = quest_deck[0]
-            # If the current quest step involves a specific target or faction, spawn them.
             if current_node.get("type") in ["combat", "climax", "scout"]:
                 faction = current_node.get("faction", "wild_beasts")
                 threat = current_node.get("threat", 1)
                 
-                # Boss/Elite spawn for climax
                 if current_node.get("type") == "climax":
                     spawns.append({
                         "name": f"{faction.capitalize()} Leader",
@@ -120,7 +98,6 @@ class CampaignDirector:
                         "tags": ["hostile", "elite", faction]
                     })
                 
-                # Standard mooks based on threat
                 for i in range(random.randint(1, threat + 1)):
                     spawns.append({
                         "name": f"{faction.capitalize()} Scout",
@@ -146,3 +123,63 @@ class CampaignDirector:
             })
             
         return spawns
+
+class CampaignWeaver:
+    """
+    The Campaign Weaver: Architect of the hidden 'Iceberg' narrative.
+    Connects side-quests to a long-term cosmic or political master plot.
+    """
+    def __init__(self):
+        self.ollama_url = OLLAMA_URL
+        self.model = OLLAMA_MODEL
+
+    async def generate_master_arc(self) -> Optional[Any]:
+        """
+        Generates a 5-Act hidden plot involving two major factions and a cosmic threat.
+        Returns a MasterArc Pydantic model populated via AI.
+        """
+        prompt = """
+        You are the Master Storyteller for Ostraka, a gritty steampunk-fantasy world.
+        Generate a 'Master Arc' for a long-term campaign.
+        Include:
+        - A major antagonist faction from: sump_kin, iron_caldera, imperial_remnant.
+        - A cosmic or existential threat.
+        - A target objective (e.g., 'The Lith-Siphon', 'The Clockwork Moon').
+        - 3 to 5 'Key Nouns' (locations, artifacts, or characters) central to the plot.
+        
+        Respond in JSON format:
+        {
+            "antagonist_faction": "string",
+            "target_objective": "string",
+            "key_nouns": ["string", "string"]
+        }
+        """
+        
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json"
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.ollama_url, json=payload, timeout=20) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        raw = json.loads(data.get("response", "{}"))
+                        # Import here to avoid circular dependencies
+                        from core.schemas import MasterArc
+                        return MasterArc(**raw)
+        except Exception as e:
+            print(f"[Weaver Error] Failed to generate plot: {e}")
+            
+        return None
+
+    def evaluate_tension(self, arc: Any) -> int:
+        """
+        Calculates a world 'Tension' bonus based on the current Act of the master arc.
+        As the arc progresses, encounters become more frequent and lethal.
+        """
+        if not arc: return 0
+        return arc.current_act * 5 # Adds +5 chaos/threat per Act
